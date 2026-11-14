@@ -4,6 +4,14 @@
 
 本项目与 Anthropic 无隶属关系。Claude 等名称与商标属于其各自所有者。
 
+## 下载安装（Windows x64）
+
+**[下载小克 0.2.8 完整安装器](https://github.com/yunche6657/Claude-Desktop-copy/releases/download/v0.2.8/Xiaoke-0.2.8-x64.exe)** · [发布说明与 SHA-256](https://github.com/yunche6657/Claude-Desktop-copy/releases/tag/v0.2.8)
+
+运行安装器并启动“小克”，随后在应用设置中配置自己的模型网关、API Key 和模型。无需安装 Node.js、npm、Electron 或 Bun。安装包已包含完整桌面前端（Code / Cowork）与代理运行时；不含发布者的账号和聊天历史。模型调用需要可用的模型服务。
+
+安装器未经代码签名，Windows 可能显示未知发布者。当前发布平台为 Windows x64。
+
 ## 仓库内容
 
 - `desktop/`：Electron 主进程、IPC 桥接、会话内核、网关与权限交互。
