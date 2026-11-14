@@ -1,6 +1,6 @@
 # 小克 · Code Desktop Reconstruction
 
-基于 Electron 的独立桌面编程工作区重建项目，当前版本 **0.2.8**。包含 Code / Cowork 会话桥接、本地执行、模型网关、MCP 接入、会话持久化与 Windows 安装器构建工具。
+**以 1:1 复刻 Claude Desktop 为目标，支持自定义模型、网关、工具和界面。** 当前版本 **0.2.8**，提供 Code / Cowork 工作区、本地执行、MCP、持久会话与 Windows 完整安装器。自有源码采用 MIT 许可证，允许修改、二次开发和分发；已知功能差异和第三方资源边界见下文。
 
 本项目与 Anthropic 无隶属关系。Claude 等名称与商标属于其各自所有者。
 
@@ -43,8 +43,24 @@ npm run desktop
 ### 外部资源
 
 1. `agent-core/`：由安装脚本从脚本中固定的上游版本构建并校验；包含 Claude Code Best bundle 和 Bun。首次构建需要网络与上游构建环境。使用前检查上游项目的许可与版本要求。
-2. `resources/bootstrap-3p.json`：桌面启动配置，当前本地配置含账号标识，已从公开快照排除。完整桌面构建需自行提供经过审核的合成配置。
-3. `resources/ion-dist/`：完整桌面所用的前端静态资源。当前开发环境由本机目录链接提供，本仓库不包含这份资源，也没有公开自动下载流程。需自行准备兼容版本。缺少该目录时，完整桌面和安装器构建不能视为可复现。
+2. `resources/bootstrap-3p.json`：仓库提供使用合成身份的启动配置，无发布者账号资料。
+3. `resources/ion-dist/`：完整桌面的预编译前端。下载并安装本项目 Release 后，可以用下述命令导入；导入会生成逐文件 SHA-256 清单，不使用本机目录链接。此流程是预编译资源准备，不是从原始前端工程编译。
+
+```powershell
+# 独立界面：源码位于 renderer/，无需额外前端资源
+npm run build:frontend
+npm start
+
+# 完整桌面：从已安装的小克提取相同版本资源
+npm run frontend:prepare -- --from "C:\\你的安装目录\\resources\\app.asar"
+# 或从独立 ion-dist 目录导入
+npm run frontend:prepare -- --from "D:\\frontend-assets\\ion-dist"
+node tools/setup-agent-core.cjs
+npm run package:check
+npm run package
+```
+
+`renderer/` 的独立界面源码可自由修改和构建；它与 Release 的完整桌面前端并不等价。完整前端原始工程未在本地取得，因此本仓库不宣称已完成其源码级可复现构建。
 
 不要把本地账号、模型 API Key、OAuth 令牌或聊天历史加入仓库。模型连接在应用本地配置中设置，不在源码中写入凭据。
 
@@ -80,4 +96,4 @@ npm run package
 
 ## 许可状态
 
-此发布准备快照尚未指定自有代码的开源许可证，默认保留相关权利；不应推定第三方资源适用同一许可证。正式公开发布前应由项目维护者选定自有代码许可证并核对依赖清单。
+自有项目代码采用 [MIT License](LICENSE)，允许使用、修改、二次开发及分发。第三方编译资源、商标、图标和数据不因本项目许可证而重新授权；来源与待核对项见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

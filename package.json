@@ -12,10 +12,13 @@
     "build": "node build/build.cjs --target dir --out dist",
     "build:asar": "node build/build.cjs --target asar --out dist-asar",
     "package": "node tools/package-installer.cjs",
-    "package:check": "node tools/package-installer.cjs --dry-run"
+    "package:check": "node tools/package-installer.cjs --dry-run",
+    "build:frontend": "node tools/build-frontend.cjs",
+    "frontend:prepare": "node tools/prepare-frontend.cjs"
   },
   "devDependencies": {
     "electron": "^42.0.0",
     "electron-builder": "^26.15.3"
-  }
+  },
+  "license": "MIT"
 }

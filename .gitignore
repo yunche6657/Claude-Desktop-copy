@@ -4,7 +4,7 @@ resources/ion-dist/
 resources/ion-dist.*/
 resources/*.exe
 resources/*.vhdx
-resources/bootstrap-3p.json
+resources/frontend-manifest.json
 .data/
 .tmp/
 data/

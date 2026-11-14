@@ -13,4 +13,4 @@ This inventory records known origins and publication exclusions. It does not gra
 | i18n overlay | Reconstruction workspace localization data | Included for review; full provenance review pending |
 | Public suffix data | See desktop/native-public-suffix.cjs and its source comments | Embedded data/source; review upstream terms before redistribution |
 
-No license has yet been selected for original project code. A public repository alone does not grant an open-source license. Third-party trademarks remain the property of their owners.
+Original project code is licensed under MIT; see LICENSE. Third-party compiled frontend assets, data, icons and trademarks retain their own terms and are not relicensed under MIT. The complete desktop frontend's original source project is not available in this repository; its import utility handles prebuilt assets only.
