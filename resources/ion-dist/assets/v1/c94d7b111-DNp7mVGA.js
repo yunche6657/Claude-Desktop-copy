@@ -1,0 +1,1 @@
+import{f as e}from"./vendor-intl-DYfox5Co.js";var t=e({title:{defaultMessage:"Disable cloud sessions?",id:"MpldgELHjB"},body:{defaultMessage:"Claude Security depends on cloud sessions. Disabling this will also turn off Claude Security for your organization. This will cancel any security scans you might have in progress.",id:"1hh8JXe5x+"}});export{t};

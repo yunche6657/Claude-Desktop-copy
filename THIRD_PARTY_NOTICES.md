@@ -8,7 +8,7 @@ This inventory records known origins and publication exclusions. It does not gra
 | electron-builder | https://github.com/electron-userland/electron-builder | npm development dependency; generated installer excluded |
 | Claude Code Best runtime | https://github.com/claude-code-best/claude-code | setup script only; generated agent-core excluded |
 | Bun | https://github.com/oven-sh/bun | setup script only; binary excluded |
-| Desktop frontend ion-dist | Separately supplied local frontend artifact | Excluded; no public acquisition workflow provided |
+| Desktop frontend ion-dist | Locally pinned desktop frontend snapshot; related public extraction: https://github.com/rianprei/claude-desktop-analysis/tree/main/resources/ion-dist | Included as precompiled assets with per-file SHA-256 inventory; not relicensed under MIT. The related public extraction is not asserted to be the exact same build. |
 | Desktop icons in desktop/assets | Reconstruction workspace assets; precise provenance not established | Included in source snapshot for review; reuse rights have not been established |
 | i18n overlay | Reconstruction workspace localization data | Included for review; full provenance review pending |
 | Public suffix data | See desktop/native-public-suffix.cjs and its source comments | Embedded data/source; review upstream terms before redistribution |

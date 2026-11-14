@@ -1,10 +1,8 @@
 node_modules/
 agent-core/
-resources/ion-dist/
 resources/ion-dist.*/
 resources/*.exe
 resources/*.vhdx
-resources/frontend-manifest.json
 .data/
 .tmp/
 data/

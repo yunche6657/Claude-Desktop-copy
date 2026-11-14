@@ -46,18 +46,17 @@ npm run desktop:frontend
 
 1. `agent-core/`：由安装脚本从脚本中固定的上游版本构建并校验；包含 Claude Code Best bundle 和 Bun。首次构建需要网络与上游构建环境。使用前检查上游项目的许可与版本要求。
 2. `resources/bootstrap-3p.json`：仓库提供使用合成身份的启动配置，无发布者账号资料。
-3. `resources/ion-dist/`：完整桌面的预编译前端。下载并安装本项目 Release 后，可以用下述命令导入；导入会生成逐文件 SHA-256 清单，不使用本机目录链接。此流程是预编译资源准备，不是从原始前端工程编译。
+3. `resources/ion-dist/`：**已随仓库提交完整桌面的预编译前端**，并附带 `resources/frontend-manifest.json` 逐文件 SHA-256 清单。克隆后直接校验即可，无需先安装再提取。它是可编辑的编译 JS/CSS 和静态资源，不等于原始 TS/React 工程。
 
 ```powershell
 # 独立界面：源码位于 renderer/，无需额外前端资源
 npm run build:frontend
 npm start
 
-# 完整桌面：从已安装的小克提取相同版本资源
-npm run frontend:prepare -- --from "C:\\你的安装目录\\resources\\app.asar"
-# 或从独立 ion-dist 目录导入
-npm run frontend:prepare -- --from "D:\\frontend-assets\\ion-dist"
+# 完整桌面：仓库已包含前端，直接检查
+npm run frontend:check
 node tools/setup-agent-core.cjs
+npm run desktop:frontend
 npm run package:check
 npm run package
 ```
