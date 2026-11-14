@@ -14,7 +14,9 @@
     "package": "node tools/package-installer.cjs",
     "package:check": "node tools/package-installer.cjs --dry-run",
     "build:frontend": "node tools/build-frontend.cjs",
-    "frontend:prepare": "node tools/prepare-frontend.cjs"
+    "frontend:prepare": "node tools/prepare-frontend.cjs",
+    "frontend:check": "node tools/check-frontend.cjs",
+    "desktop:frontend": "node tools/desktop-frontend.cjs"
   },
   "devDependencies": {
     "electron": "^42.0.0",

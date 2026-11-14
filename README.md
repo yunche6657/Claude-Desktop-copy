@@ -37,8 +37,10 @@ npm start
 
 ```powershell
 node tools/setup-agent-core.cjs
-npm run desktop
+npm run desktop:frontend
 ```
+
+`npm run desktop` 启动独立源码界面；`desktop:frontend` 校验资源后固定使用完整桌面前端，避免误用本机其他安装目录。
 
 ### 外部资源
 

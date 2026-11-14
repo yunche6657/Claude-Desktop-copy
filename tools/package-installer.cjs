@@ -454,6 +454,7 @@ function main() {
     log('        build is staged into a space-free directory instead of being run here.');
   }
 
+  log('  frontend: '+JSON.stringify(require('./check-frontend.cjs').check(ROOT)));
   // Preconditions worth stating up front rather than discovering after a long build.
   for (const rel of ['agent-core/manifest.json', 'agent-core/bun/bun.exe',
     'agent-core/claude-code/dist/cli-bun.js', 'resources/ion-dist', 'node_modules']) {
