@@ -1,0 +1,33 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {mkdtempSync,readFileSync,statSync} from 'node:fs';
+import path from 'node:path';
+import {tmpdir} from 'node:os';
+const require=createRequire(import.meta.url);
+const {safeRendererError,createRendererErrorLog}=require('../desktop/renderer-error-log.cjs');
+const sessionId='local_591fcec4-2bd7-4db8-954b-136105280c04';
+const event={componentName:'EpitaxyChatPanel',errorName:'TypeError',sessionId,route:`/epitaxy/${sessionId}?token=secret`,stack:'TypeError: PRIVATE_CHAT_TEXT token=SECRET\n at privateFunction (app://localhost/assets/v1/shared-104-CTONUSaz.js:4:6903)\n at https://example.test/a.js?token=SECRET:1:2\n at C:\\Users\\secret\\x.js:1:2'};
+test('pane error diagnostics retain only approved metadata and asset coordinates',()=>{
+ const result=safeRendererError(event);
+ assert.deepEqual(result.frames,['assets/v1/shared-104-CTONUSaz.js:4:6903']);
+ assert.equal(result.route,`/epitaxy/${sessionId}`);
+ assert.equal(result.sessionId,sessionId);
+ assert.equal(result.errorName,'TypeError');
+ assert.doesNotMatch(JSON.stringify(result),/PRIVATE|SECRET|privateFunction|Users|example/);
+ assert.equal(safeRendererError({...event,componentName:'Other'}),null);
+ const poisoned=safeRendererError({...event,errorName:'CHAT_CONTENT',sessionId:'secret',route:'/other?secret'});
+ assert.equal(poisoned.errorName,'Error');assert.equal(poisoned.sessionId,null);assert.equal(poisoned.route,'/epitaxy');
+});
+test('bounded error log preserves whole recent JSON records and never throws on write failures',()=>{
+ const directory=mkdtempSync(path.join(tmpdir(),'renderer-errors-'));
+ const log=createRendererErrorLog({directory,maxBytes:1024,clock:()=> '2026-11-11T00:00:00Z'});
+ for(let i=0;i<20;i++)assert.equal(log.record(event),true);
+ assert.ok(statSync(log.file).size<=1024);
+ const rows=readFileSync(log.file,'utf8').trim().split('\n').map(JSON.parse);
+ assert.ok(rows.length>0&&rows.length<20);
+ assert.ok(rows.every(r=>r.errorName==='TypeError'));
+ assert.equal(log.record({...event,componentName:'Other'}),false);
+ const bad=createRendererErrorLog({directory:log.file});
+ assert.equal(bad.record(event),false);
+});

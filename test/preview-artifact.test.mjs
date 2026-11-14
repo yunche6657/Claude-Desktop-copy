@@ -1,0 +1,46 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {createPreviewArtifacts,STATIC_CSP,MAX_TEXT_BYTES}=require('../desktop/preview-artifact.cjs');
+const base=path.resolve('.tmp/artifact-tests');fs.mkdirSync(base,{recursive:true});
+function fixture(){const dir=fs.mkdtempSync(path.join(base,'case-'));const root=path.join(dir,'project');fs.mkdirSync(path.join(root,'docs'),{recursive:true});fs.writeFileSync(path.join(root,'docs/index.html'),'<link rel="stylesheet" href="../style.css"><h1>REAL_ARTIFACT_BYTES</h1>');fs.writeFileSync(path.join(root,'style.css'),'body{color:rgb(1,2,3)}');fs.writeFileSync(path.join(root,'app.js'),'globalThis.ARTIFACT_SCRIPT=true;');fs.writeFileSync(path.join(dir,'outside.txt'),'PRIVATE_OUTSIDE');const sessions=new Map([['session',{cwd:root}]]);const api=createPreviewArtifacts({getSession:id=>sessions.get(id),authorizeHtmlFile:({sourcePath})=>sourcePath.startsWith(root+path.sep)});return{dir,root,sessions,api,cleanup(){api.dispose();fs.rmSync(dir,{recursive:true,force:true});}};}
+const request=(url,method='GET')=>new Request(url,{method});
+
+test('interactive artifact token serves real authorized files, relative CSS/JS and HEAD with MIME',async()=>{
+ const f=fixture();try{const entry=await f.api.mintFile({requestedPath:'docs/index.html',cwd:f.root,sessionId:'session',ownerId:'preview-session',interactive:true});assert.ok(entry.url.startsWith('claude-preview://'));assert.equal(await(await f.api.handleRequest(request(entry.url))).text(),fs.readFileSync(path.join(f.root,'docs/index.html'),'utf8'));const css=new URL('../style.css',entry.url).href;const response=await f.api.handleRequest(request(css));assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/css/);assert.equal(await response.text(),'body{color:rgb(1,2,3)}');const js=await f.api.handleRequest(request(new URL('../app.js',entry.url).href));assert.match(js.headers.get('content-type'),/javascript/);assert.equal(await js.text(),'globalThis.ARTIFACT_SCRIPT=true;');const head=await f.api.handleRequest(request(css,'HEAD'));assert.equal(head.status,200);assert.equal(await head.text(),'');assert.equal((await f.api.handleRequest(request(css,'POST'))).status,405);}finally{f.cleanup();}
+});
+
+test('canonical containment blocks escaped relative paths and external junction resources',async()=>{
+ const f=fixture();try{const entry=await f.api.mintFile({requestedPath:'docs/index.html',cwd:f.root,sessionId:'session',ownerId:'preview-session',interactive:true});const outside=path.join(f.dir,'external');fs.mkdirSync(outside);fs.writeFileSync(path.join(outside,'leak.txt'),'PRIVATE_OUTSIDE');fs.symlinkSync(outside,path.join(f.root,'jump'),'junction');assert.equal((await f.api.handleRequest(request(new URL('../jump/leak.txt',entry.url).href))).status,404);assert.equal((await f.api.handleRequest(request(entry.url.replace('/docs/index.html','/%2e%2e/outside.txt')))).status,404);assert.equal((await f.api.handleRequest(request(entry.url.replace('/docs/index.html','/C%3A/private.txt')))).status,404);}finally{f.cleanup();}
+});
+
+test('static content preserves native CSP and never grants local relative resources',async()=>{
+ const f=fixture();try{const entry=await f.api.mintContent({content:'<h1>STATIC_REAL</h1><script>globalThis.BAD=true</script>',displayPath:'generated.html',isSvg:false,cwd:f.root,sessionId:'session',ownerId:'static-preview'});const response=await f.api.handleRequest(request(entry.url));assert.equal(response.status,200);assert.equal(response.headers.get('content-security-policy'),STATIC_CSP);assert.match(await response.text(),/STATIC_REAL/);assert.equal((await f.api.handleRequest(request(new URL('/style.css',entry.url).href))).status,404);assert.equal(await f.api.mintContent({content:'x'.repeat(MAX_TEXT_BYTES+1),displayPath:'big.html',isSvg:false,cwd:f.root,sessionId:'session',ownerId:'big'}),null);}finally{f.cleanup();}
+});
+
+test('session deletion, explicit revocation and source inode replacement invalidate old URLs',async()=>{
+ const f=fixture();try{const create=()=>f.api.mintFile({requestedPath:'docs/index.html',cwd:f.root,sessionId:'session',ownerId:'preview-session',interactive:true});let entry=await create();f.sessions.delete('session');assert.equal((await f.api.handleRequest(request(entry.url))).status,404);f.sessions.set('session',{cwd:f.root});entry=await create();assert.equal(f.api.revokeOwner('preview-session'),2);assert.equal((await f.api.handleRequest(request(entry.url))).status,404);entry=await create();const source=path.join(f.root,'docs/index.html');fs.renameSync(source,source+'.old');fs.writeFileSync(source,'REPLACED_SOURCE');assert.equal((await f.api.handleRequest(request(entry.url))).status,404);}finally{f.cleanup();}
+});
+
+test('unknown paths, missing sessions and refused authorization never mint a successful grant',async()=>{
+ const f=fixture();try{assert.equal(await f.api.mintFile({requestedPath:'docs/index.html',cwd:f.root,sessionId:'missing',ownerId:'p',interactive:true}),null);assert.equal(await f.api.mintFile({requestedPath:path.join(f.dir,'outside.txt'),cwd:f.root,sessionId:'session',ownerId:'p',interactive:true}),null);assert.equal(await f.api.mintFile({requestedPath:'\\\\server\\share\\doc.html',cwd:f.root,sessionId:'session',ownerId:'p'}),null);const deny=createPreviewArtifacts({getSession:()=>({}),authorizeHtmlFile:()=>false});try{assert.equal(await deny.mintFile({requestedPath:'docs/index.html',cwd:f.root,sessionId:'session',ownerId:'p'}),null);}finally{deny.dispose();}}finally{f.cleanup();}
+});
+
+test('per-session protocol binding limits owners and removes only its own handler on teardown',async()=>{
+ const f=fixture();const handlers=new Map();const session={protocol:{isProtocolHandled:name=>handlers.has(name),handle:(name,fn)=>handlers.set(name,fn),unhandle:name=>handlers.delete(name)}};try{const entry=await f.api.mintContent({content:'<h1>BOUND</h1>',displayPath:'generated.html',isSvg:false,cwd:f.root,sessionId:'session',ownerId:'owner-a'});assert.equal(await f.api.bindSession(session,'owner-b'),true);assert.equal((await handlers.get('claude-preview')(request(entry.url))).status,404);assert.equal(await f.api.bindSession(session,'owner-a'),true);assert.equal((await handlers.get('claude-preview')(request(entry.url))).status,200);f.api.unbindSession(session,'owner-a');assert.equal((await handlers.get('claude-preview')(request(entry.url))).status,404);f.api.unbindSession(session,'owner-b');assert.equal(handlers.has('claude-preview'),false);handlers.set('claude-preview',()=>new Response('FOREIGN'));assert.equal(await f.api.bindSession(session,'owner-a'),false);assert.equal(await(await handlers.get('claude-preview')()).text(),'FOREIGN');}finally{f.cleanup();}
+});
+
+test('a failed session lookup revokes access instead of exposing a protocol exception',async()=>{
+ let failing=false;const api=createPreviewArtifacts({getSession:()=>{if(failing)throw new Error('lookup unavailable');return{};},authorizeHtmlFile:()=>true});try{const entry=await api.mintContent({content:'<h1>PRIVATE</h1>',displayPath:'x.html',isSvg:false,cwd:process.cwd(),sessionId:'session',ownerId:'owner'});assert.ok(entry);failing=true;assert.equal((await api.handleRequest(request(entry.url))).status,404);assert.equal(await api.mintContent({content:'x',displayPath:'x.html',isSvg:false,cwd:process.cwd(),sessionId:'session',ownerId:'owner'}),null);}finally{api.dispose();}
+});
+
+test('native raw-file fallback uses exact data HTML without a CSP wrapper or resource grant',async()=>{
+ const f=fixture();try{const source='<title>RAW_NATIVE</title><h1>RAW_FILE</h1><script>globalThis.RAW=true</script><img src="../secret.svg">';fs.writeFileSync(path.join(f.root,'docs/index.html'),source);const entry=await f.api.readRawFile({requestedPath:'docs/index.html',cwd:f.root,sessionId:'session',ownerId:'raw'});assert.equal(entry.url,'data:text/html;charset=utf-8,'+encodeURIComponent(source));assert.equal(f.api.ownsRaw(entry.url,'raw'),true);assert.equal(f.api.owns(entry.url),false);assert.equal(f.api.ownsRaw(entry.url+'#anchor','raw'),true);assert.equal(f.api.ownsRaw(entry.url,'other'),false);assert.throws(()=>new URL('../app.js',entry.url));assert.ok(!decodeURIComponent(entry.url).includes('Content-Security-Policy'));f.api.revokeOwner('raw');assert.equal(f.api.ownsRaw(entry.url,'raw'),false);}finally{f.cleanup();}
+});
+
+test('raw-file fallback matches the native encoded navigation ceiling and refuses a replaced source directory',async()=>{
+ const f=fixture();try{const source=path.join(f.root,'docs/index.html');fs.writeFileSync(source,'汉'.repeat(240000));assert.equal(await f.api.readRawFile({requestedPath:source,cwd:f.root,sessionId:'session',ownerId:'raw'}),null);fs.writeFileSync(source,'<h1>BEFORE</h1>');const first=await f.api.readRawFile({requestedPath:source,cwd:f.root,sessionId:'session',ownerId:'raw'});assert.ok(first);const dir=path.dirname(source);fs.renameSync(dir,dir+'.old');fs.mkdirSync(dir);fs.writeFileSync(source,'<h1>AFTER</h1>');assert.equal(await f.api.readRawFile({requestedPath:source,cwd:f.root,sessionId:'session',ownerId:'raw',expected:first}),null);}finally{f.cleanup();}
+});

@@ -1,0 +1,665 @@
+{
+  "main": {
+    "17519066": {
+      "rule": "forcedFor",
+      "group": "builtinBrowser",
+      "value": true
+    },
+    "49458538": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "123929380": {
+      "rule": "forced",
+      "value": true
+    },
+    "144321860": {
+      "rule": "remote"
+    },
+    "162211072": {
+      "rule": "forced",
+      "value": true
+    },
+    "245679952": {
+      "rule": "forced",
+      "value": true
+    },
+    "270847253": {
+      "rule": "remote"
+    },
+    "275501886": {
+      "rule": "forced",
+      "value": false
+    },
+    "396417011": {
+      "rule": "remote"
+    },
+    "397125142": {
+      "rule": "remote"
+    },
+    "568988794": {
+      "rule": "remote"
+    },
+    "570403704": {
+      "rule": "remote"
+    },
+    "580613960": {
+      "rule": "remote"
+    },
+    "582101327": {
+      "rule": "forced",
+      "value": true
+    },
+    "659073223": {
+      "rule": "remote"
+    },
+    "706068684": {
+      "rule": "remote"
+    },
+    "732695530": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "822840158": {
+      "rule": "remote"
+    },
+    "873030668": {
+      "rule": "remote"
+    },
+    "884132720": {
+      "rule": "forced",
+      "value": true
+    },
+    "919579692": {
+      "rule": "remote"
+    },
+    "922243720": {
+      "rule": "remote"
+    },
+    "1130670564": {
+      "rule": "remote"
+    },
+    "1143815894": {
+      "rule": "forced",
+      "value": true
+    },
+    "1169442571": {
+      "rule": "remote"
+    },
+    "1209626463": {
+      "rule": "remote"
+    },
+    "1263782781": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": {
+        "stage": {
+          "max_ms": 600000
+        },
+        "commit": {
+          "max_ms": 600000
+        }
+      }
+    },
+    "1265093829": {
+      "rule": "remote"
+    },
+    "1265511872": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "1341990989": {
+      "rule": "remote"
+    },
+    "1453979703": {
+      "rule": "remote"
+    },
+    "1486104550": {
+      "rule": "remote"
+    },
+    "1496761016": {
+      "rule": "remote"
+    },
+    "1648655587": {
+      "rule": "forced",
+      "value": {
+        "perTask": 1,
+        "global": 3
+      }
+    },
+    "1675873863": {
+      "rule": "remote"
+    },
+    "1696890383": {
+      "rule": "forced",
+      "value": true
+    },
+    "1699596383": {
+      "rule": "remote"
+    },
+    "1701404423": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "1731450842": {
+      "rule": "remote"
+    },
+    "1776348311": {
+      "rule": "remote"
+    },
+    "1885697743": {
+      "rule": "remote"
+    },
+    "1925932989": {
+      "rule": "remote"
+    },
+    "1942337209": {
+      "rule": "remote"
+    },
+    "1947305033": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "1953604137": {
+      "rule": "remote"
+    },
+    "1978029737": {
+      "rule": "forced",
+      "value": {
+        "coworkNativeFilePreview": true,
+        "scheduledTaskStaleReapEnabled": false,
+        "disableKeptWorktreeReaper": true,
+        "workspaceBashWaitLonger": true
+      }
+    },
+    "1991650828": {
+      "rule": "remote"
+    },
+    "1992087837": {
+      "rule": "forced",
+      "value": true
+    },
+    "2015900644": {
+      "rule": "remote"
+    },
+    "2016258596": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "2049450122": {
+      "rule": "forced",
+      "value": true
+    },
+    "2051942385": {
+      "rule": "forced",
+      "value": true
+    },
+    "2057990550": {
+      "rule": "remote"
+    },
+    "2115990222": {
+      "rule": "forced",
+      "value": true
+    },
+    "2122679090": {
+      "rule": "remote"
+    },
+    "2152240709": {
+      "rule": "remote"
+    },
+    "2161994580": {
+      "rule": "remote"
+    },
+    "2216766246": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": 3000
+    },
+    "2227247507": {
+      "rule": "remote"
+    },
+    "2227779220": {
+      "rule": "remote"
+    },
+    "2300874989": {
+      "rule": "remote"
+    },
+    "2307090146": {
+      "rule": "forced",
+      "value": true
+    },
+    "2323591725": {
+      "rule": "remote"
+    },
+    "2365358358": {
+      "rule": "remote"
+    },
+    "2393677837": {
+      "rule": "forced",
+      "value": true
+    },
+    "2533965962": {
+      "rule": "remote"
+    },
+    "2537760906": {
+      "rule": "forced",
+      "value": true
+    },
+    "2675972342": {
+      "rule": "remote"
+    },
+    "2696933583": {
+      "rule": "remote"
+    },
+    "2745857735": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "2766542666": {
+      "rule": "remote"
+    },
+    "2768029720": {
+      "rule": "remote"
+    },
+    "2902719601": {
+      "rule": "remote"
+    },
+    "2917981554": {
+      "rule": "forcedFor",
+      "group": "sessionHostDevice",
+      "value": true
+    },
+    "2940196192": {
+      "rule": "forced",
+      "value": true
+    },
+    "3014178965": {
+      "rule": "remote"
+    },
+    "3038984622": {
+      "rule": "forced",
+      "value": false
+    },
+    "3042392253": {
+      "rule": "remote"
+    },
+    "3046457088": {
+      "rule": "forced",
+      "value": true
+    },
+    "3076393065": {
+      "rule": "remote"
+    },
+    "3093186863": {
+      "rule": "remote"
+    },
+    "3162918178": {
+      "rule": "remote"
+    },
+    "3216202605": {
+      "rule": "remote"
+    },
+    "3229517805": {
+      "rule": "forced",
+      "value": {
+        "verifyToolsEnabled": true
+      }
+    },
+    "3300773012": {
+      "rule": "forced",
+      "value": {
+        "scheduledTaskPostWakeDelayMs": 180000,
+        "scheduledTaskMacLateTimerWakeEnabled": true,
+        "scheduledTaskVmWaitMaxTicks": 10
+      }
+    },
+    "3310072118": {
+      "rule": "remote"
+    },
+    "3372259263": {
+      "rule": "remote"
+    },
+    "3377630395": {
+      "rule": "forced",
+      "value": true
+    },
+    "3436441689": {
+      "rule": "remote"
+    },
+    "3457044425": {
+      "rule": "remote"
+    },
+    "3484205914": {
+      "rule": "remote"
+    },
+    "3531779070": {
+      "rule": "forced",
+      "value": true
+    },
+    "3556866454": {
+      "rule": "remote"
+    },
+    "3586389629": {
+      "rule": "forced",
+      "value": 60000
+    },
+    "3602629573": {
+      "rule": "remote"
+    },
+    "3603781487": {
+      "rule": "remote"
+    },
+    "3724674924": {
+      "rule": "forced",
+      "value": true
+    },
+    "3736295273": {
+      "rule": "remote"
+    },
+    "3868149774": {
+      "rule": "remote"
+    },
+    "3934413517": {
+      "rule": "remote"
+    },
+    "3946462706": {
+      "rule": "forced",
+      "value": true
+    },
+    "3950286855": {
+      "rule": "remote"
+    },
+    "3961433847": {
+      "rule": "forced",
+      "value": true
+    },
+    "3990395613": {
+      "rule": "forcedFor",
+      "group": "builtinBrowser",
+      "value": true
+    },
+    "4044603026": {
+      "rule": "remote"
+    },
+    "4055864154": {
+      "rule": "remote"
+    },
+    "4092838515": {
+      "rule": "remote"
+    },
+    "4100354330": {
+      "rule": "remote"
+    },
+    "4114957886": {
+      "rule": "forced",
+      "value": true
+    },
+    "4255248502": {
+      "rule": "remote"
+    }
+  },
+  "web": {
+    "130942744": {
+      "rule": "always",
+      "value": true
+    },
+    "147471044": {
+      "rule": "always",
+      "value": true
+    },
+    "151700879": {
+      "rule": "always",
+      "value": true
+    },
+    "304458538": {
+      "rule": "when",
+      "condition": "autoModeCode",
+      "value": {
+        "enabled": "enabled"
+      }
+    },
+    "505512513": {
+      "rule": "always",
+      "value": true
+    },
+    "520984675": {
+      "rule": "always",
+      "value": true
+    },
+    "574905726": {
+      "rule": "always",
+      "value": true
+    },
+    "942840715": {
+      "rule": "always",
+      "value": false
+    },
+    "986399546": {
+      "rule": "always",
+      "value": true
+    },
+    "1002481325": {
+      "rule": "always",
+      "value": true
+    },
+    "1045446575": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": {
+        "enabled": true,
+        "pollBaseMs": 30000,
+        "pollCapMs": 900000,
+        "pollResetOnTransitionsOnly": true
+      }
+    },
+    "1093656152": {
+      "rule": "always",
+      "value": true
+    },
+    "1119418671": {
+      "rule": "when",
+      "condition": "alwaysStartWithDefaultModel",
+      "value": true
+    },
+    "1144854707": {
+      "rule": "always",
+      "value": true
+    },
+    "1179150525": {
+      "rule": "always",
+      "value": true
+    },
+    "1215221242": {
+      "rule": "always",
+      "value": true
+    },
+    "1294710626": {
+      "rule": "always",
+      "value": true
+    },
+    "1417478306": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": false
+    },
+    "1441987769": {
+      "rule": "always",
+      "value": false
+    },
+    "1588340729": {
+      "rule": "always",
+      "value": true
+    },
+    "1658632017": {
+      "rule": "always",
+      "value": true
+    },
+    "1709592054": {
+      "rule": "when",
+      "condition": "autoModeCode",
+      "value": true
+    },
+    "1868684740": {
+      "rule": "always",
+      "value": true
+    },
+    "1875770773": {
+      "rule": "when",
+      "condition": "featureDiscoveryDisabled",
+      "value": true
+    },
+    "1895339162": {
+      "rule": "always",
+      "value": {
+        "enabled": true
+      }
+    },
+    "1997501558": {
+      "rule": "always",
+      "value": true
+    },
+    "2138864756": {
+      "rule": "computed",
+      "role": "sessionHostDownloads"
+    },
+    "2344289156": {
+      "rule": "always",
+      "value": true
+    },
+    "2369776764": {
+      "rule": "computed",
+      "role": "restrictedModelBanner"
+    },
+    "2431502897": {
+      "rule": "always",
+      "value": "inherit"
+    },
+    "2464296336": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "2477702615": {
+      "rule": "when",
+      "condition": "titleNeedsCli",
+      "value": true
+    },
+    "2479960717": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "2547348043": {
+      "rule": "always",
+      "value": true
+    },
+    "2688060585": {
+      "rule": "when",
+      "condition": "autoModeCodeOrBypassDisabled",
+      "value": true
+    },
+    "2722545484": {
+      "rule": "when",
+      "condition": "claudeInChromeEnabled",
+      "value": true
+    },
+    "2774291247": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "2831057674": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "2895944283": {
+      "rule": "always",
+      "value": true
+    },
+    "2971093051": {
+      "rule": "follows",
+      "condition": "scheduledTasksEnabled"
+    },
+    "2973881027": {
+      "rule": "computed",
+      "role": "defaultModel"
+    },
+    "3007887412": {
+      "rule": "always",
+      "value": false
+    },
+    "3088953445": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "3112015973": {
+      "rule": "computed",
+      "role": "sessionHostDownloads"
+    },
+    "3269331205": {
+      "rule": "when",
+      "condition": "autoModeCowork",
+      "value": true
+    },
+    "3353525254": {
+      "rule": "follows",
+      "condition": "scheduledTasksEnabled"
+    },
+    "3356268835": {
+      "rule": "computed",
+      "role": "coworkConfig"
+    },
+    "3368286709": {
+      "rule": "always",
+      "value": true
+    },
+    "3464534777": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "3491501307": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "3671534883": {
+      "rule": "always",
+      "value": false
+    },
+    "3716359568": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "3809766863": {
+      "rule": "when",
+      "condition": "selfHostedSessions",
+      "value": true
+    },
+    "3927880029": {
+      "rule": "always",
+      "value": {
+        "value": 3
+      }
+    },
+    "4108768567": {
+      "rule": "always",
+      "value": true
+    },
+    "4112513247": {
+      "rule": "when",
+      "condition": "builtinBrowserEnabled",
+      "value": true
+    }
+  }
+}

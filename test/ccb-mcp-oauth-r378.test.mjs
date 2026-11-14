@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+const {createCcbKernel}=createRequire(import.meta.url)('../desktop/ccb-kernel.cjs');
+
+test('OAuth controls use CCB URLs and revoke actor-bound single-use flows', {timeout:15000}, async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'ccb-oauth-')), script=path.join(dir,'fixture.cjs');
+ fs.writeFileSync(script, String.raw`const rl=require('node:readline').createInterface({input:process.stdin});rl.on('line',l=>{const f=JSON.parse(l);if(f.type!=='control_request')return;const r=f.request;const send=b=>process.stdout.write(JSON.stringify({type:'control_response',response:{subtype:'success',request_id:f.request_id,response:b}})+'\n');if(r.subtype==='initialize')return send({});if(r.subtype==='mcp_authenticate'){if(r.serverName==='timeout')return;if(r.serverName==='bad')return send({requiresUserAction:true});if(r.serverName==='automatic')return send({requiresUserAction:false});return setTimeout(()=>send({requiresUserAction:true,authUrl:'https://issuer.test/authorize?state=from-ccb'}),r.serverName==='slow'?80:0)}if(r.subtype==='mcp_oauth_callback_url')return setTimeout(()=>send({}),r.callbackUrl.includes('delay')?80:0);if(r.subtype==='mcp_clear_auth')return send({})});`);
+ const k=createCcbKernel({bunPath:process.execPath,entryPath:script,kernelRoot:dir,cwd:dir,homeDir:path.join(dir,'home'),scratchDir:path.join(dir,'scratch'),mcpControlTimeoutMs:120,mcpOAuthFlowTimeoutMs:250});
+ t.after(async()=>{await k.dispose();fs.rmSync(dir,{recursive:true,force:true})});
+ k.start({sessionId:'s'});await k.initialize('s');const actor=k.getInfo('s').actorToken;
+ const a=await k.authenticateMcpServer('s',actor,'server');assert.equal(a.authUrl,'https://issuer.test/authorize?state=from-ccb');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'server','bad','http://localhost/?code=x'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ await k.submitMcpOAuthCallback('s',actor,'server',a.flowId,'http://localhost/?code=x');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'server',a.flowId,'http://localhost/?code=x'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ assert.deepEqual(await k.authenticateMcpServer('s',actor,'automatic'),{actorToken:actor,requiresUserAction:false});
+ await assert.rejects(k.authenticateMcpServer('s',actor,'bad'),e=>e.code==='CCB_CONTROL_INVALID');
+ await assert.rejects(k.authenticateMcpServer('s',actor,'timeout'),e=>e.code==='CCB_CONTROL_TIMEOUT');
+ const slow=k.authenticateMcpServer('s',actor,'slow');await new Promise(r=>setTimeout(r,20));await k.clearMcpAuth('s',actor,'slow');await assert.rejects(slow,e=>e.code==='CCB_MCP_OAUTH_STALE');
+ const b=await k.authenticateMcpServer('s',actor,'server');const pending=k.submitMcpOAuthCallback('s',actor,'server',b.flowId,'http://localhost/?code=delay');await new Promise(r=>setTimeout(r,20));await k.clearMcpAuth('s',actor,'server');await assert.rejects(pending,e=>e.code==='CCB_MCP_OAUTH_STALE');
+ const c=await k.authenticateMcpServer('s',actor,'server');await new Promise(r=>setTimeout(r,260));await assert.rejects(k.submitMcpOAuthCallback('s',actor,'server',c.flowId,'http://localhost/?code=x'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ const d=await k.authenticateMcpServer('s',actor,'server');k.removeSession('s');k.start({sessionId:'s'});await k.initialize('s');await assert.rejects(k.submitMcpOAuthCallback('s',actor,'server',d.flowId,'http://localhost/?code=x'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+});
+
+test('rejected clear retains existing flow and pauses callbacks during clear', {timeout:15000}, async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'ccb-oauth-clear-')),script=path.join(dir,'fixture.cjs');
+ fs.writeFileSync(script,String.raw`const rl=require('node:readline').createInterface({input:process.stdin});rl.on('line',l=>{const f=JSON.parse(l);if(f.type!=='control_request')return;const r=f.request;const send=(subtype,response)=>process.stdout.write(JSON.stringify({type:'control_response',response:{subtype,request_id:f.request_id,response,error:'refused'}})+'\n');if(r.subtype==='initialize')return send('success',{});if(r.subtype==='mcp_authenticate')return send('success',{requiresUserAction:true,authUrl:'https://issuer.test/'});if(r.subtype==='mcp_oauth_callback_url')return send('success',{});if(r.subtype==='mcp_clear_auth'){if(r.serverName==='timeout')return;return setTimeout(()=>send(r.serverName==='success'?'success':'error',{}),60)}});`);
+ const k=createCcbKernel({bunPath:process.execPath,entryPath:script,kernelRoot:dir,cwd:dir,homeDir:path.join(dir,'home'),scratchDir:path.join(dir,'scratch'),mcpControlTimeoutMs:300,mcpOAuthFlowTimeoutMs:2000});
+ t.after(async()=>{await k.dispose();fs.rmSync(dir,{recursive:true,force:true})});k.start({sessionId:'s'});await k.initialize('s');const actor=k.getInfo('s').actorToken;
+ const auth=await k.authenticateMcpServer('s',actor,'x');const clear=k.clearMcpAuth('s',actor,'x');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'x',auth.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE' || e.code==='CCB_MCP_OAUTH_BUSY');
+ await assert.rejects(clear,e=>e.code==='CCB_CONTROL_REJECTED');
+ assert.deepEqual(await k.submitMcpOAuthCallback('s',actor,'x',auth.flowId,'http://localhost/callback'),{actorToken:actor});
+ const success=await k.authenticateMcpServer('s',actor,'success');const c=k.clearMcpAuth('s',actor,'success');
+ await assert.rejects(k.clearMcpAuth('s',actor,'success'),e=>e.code==='CCB_MCP_OAUTH_BUSY');await c;
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'success',success.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ const prior=await k.authenticateMcpServer('s',actor,'success');const clearReplace=k.clearMcpAuth('s',actor,'success');
+ const replacement=await k.authenticateMcpServer('s',actor,'success');await clearReplace;
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'success',prior.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'success',replacement.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ const timeout=await k.authenticateMcpServer('s',actor,'timeout');await assert.rejects(k.clearMcpAuth('s',actor,'timeout'),e=>e.code==='CCB_CONTROL_TIMEOUT');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'timeout',timeout.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ const old=await k.authenticateMcpServer('s',actor,'replacement');const changing=k.clearMcpAuth('s',actor,'replacement');
+ const newer=await k.authenticateMcpServer('s',actor,'replacement');await assert.rejects(changing,e=>e.code==='CCB_CONTROL_REJECTED');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'replacement',old.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+ assert.deepEqual(await k.submitMcpOAuthCallback('s',actor,'replacement',newer.flowId,'http://localhost/callback'),{actorToken:actor});
+ const retired=await k.authenticateMcpServer('s',actor,'retired');const delayed=k.clearMcpAuth('s',actor,'retired');k.removeSession('s');
+ await assert.rejects(delayed);k.start({sessionId:'s'});await k.initialize('s');
+ await assert.rejects(k.submitMcpOAuthCallback('s',actor,'retired',retired.flowId,'http://localhost/callback'),e=>e.code==='CCB_MCP_OAUTH_STALE');
+});

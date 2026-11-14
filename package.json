@@ -1,0 +1,21 @@
+{
+  "name": "code-desktop-reconstruction",
+  "version": "0.2.8",
+  "private": true,
+  "type": "module",
+  "description": "Independent desktop coding workspace reconstruction",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node tools/run-tests.cjs",
+    "desktop": "electron .",
+    "build": "node build/build.cjs --target dir --out dist",
+    "build:asar": "node build/build.cjs --target asar --out dist-asar",
+    "package": "node tools/package-installer.cjs",
+    "package:check": "node tools/package-installer.cjs --dry-run"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^26.15.3"
+  }
+}

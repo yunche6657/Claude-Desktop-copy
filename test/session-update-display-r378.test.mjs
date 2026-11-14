@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const { createSessionKernel } = createRequire(import.meta.url)('../desktop/session-kernel.cjs');
+
+test('session color and display updates preserve, clear and persist fixed desktop fields', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'session-display-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const storePath = path.join(dir, 'sessions.json');
+  const make = () => createSessionKernel({ storePath, emit() {}, createAgent: () => ({}) });
+  const kernel = make();
+  t.after(() => kernel.dispose());
+  const { sessionId } = kernel.start({ cwd: dir });
+  kernel.update(sessionId, { title: 'kept', color: 'red', cuAllowedApps: [{bundleId:'z'}, {bundleId:'a'}] });
+  let session = kernel.update(sessionId, { cuSelectedDisplayId: 4 });
+  assert.equal(session.cuSelectedDisplayId, 4);
+  assert.equal(session.cuDisplayPinnedByModel, false);
+  assert.equal(session.cuDisplayResolvedForApps, 'a,z');
+  session = kernel.update(sessionId, { title: undefined, color: undefined });
+  assert.equal(session.title, 'kept');
+  assert.equal(session.color, 'red');
+  assert.equal(session.cuSelectedDisplayId, 4);
+  session = kernel.update(sessionId, { color: 'invalid', cuSelectedDisplayId: null });
+  assert.equal(session.color, undefined);
+  assert.equal(session.cuSelectedDisplayId, undefined);
+  assert.equal(session.cuDisplayResolvedForApps, undefined);
+  kernel.update(sessionId, { color: 'cyan', cuSelectedDisplayId: 0 });
+  kernel.update(sessionId, { cuSelectedDisplayId: undefined });
+  kernel.flush();
+  const reopened = make();
+  t.after(() => reopened.dispose());
+  session = reopened.getSession(sessionId);
+  assert.equal(session.color, 'cyan');
+  assert.equal(session.cuSelectedDisplayId, undefined);
+  assert.equal(session.cuDisplayResolvedForApps, undefined);
+  assert.equal(session.title, 'kept');
+});

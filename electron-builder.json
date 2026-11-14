@@ -1,0 +1,54 @@
+{
+  "appId": "dev.reconstruction.code-desktop",
+  "productName": "小克",
+  "copyright": "Independent reconstruction. Not affiliated with Anthropic.",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": [
+    "server.mjs",
+    "engine.mjs",
+    "renderer/**/*",
+    "desktop/**/*",
+    "resources/ion-dist/**/*",
+    "resources/i18n-overlay/**/*",
+    "resources/bootstrap-3p.json",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "agent-core",
+      "to": "agent-core",
+      "filter": [
+        "manifest.json",
+        "bun/bun.exe",
+        "claude-code/dist/**/*"
+      ]
+    }
+  ],
+  "extraMetadata": {
+    "main": "desktop/main.cjs"
+  },
+  "asar": true,
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "icon": "desktop/assets/clawd.ico",
+    "signAndEditExecutable": true
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "小克",
+    "deleteAppDataOnUninstall": false
+  }
+}

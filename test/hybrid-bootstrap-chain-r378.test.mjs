@@ -1,0 +1,18 @@
+import test from 'node:test';import assert from 'node:assert/strict';import http from 'node:http';import {createRequire} from 'node:module';import {once} from 'node:events';
+const require=createRequire(import.meta.url);
+const {createHybridBootstrapFetch}=require('../desktop/hybrid-bootstrap-fetch.cjs');
+const {createBootstrapResponseValidator}=require('../desktop/hybrid-bootstrap-response.cjs');
+const {parseBootstrapSchema,FIELD_METADATA}=require('../desktop/hybrid-bootstrap-schema.cjs');
+const {applyBootstrapUrlPolicy}=require('../desktop/hybrid-bootstrap-policy.cjs');
+const {createHybridMemberships}=require('../desktop/hybrid-memberships.cjs');
+const {createHybridIdentityController}=require('../desktop/hybrid-identity-controller.cjs');
+const {createHybridModelSelector}=require('../desktop/hybrid-model-selector.cjs');
+test('isolated authenticated bootstrap reaches validation, membership, and model selector',async t=>{
+ let hits=[],owner=[],updates=0;const server=http.createServer((req,res)=>{hits.push({path:req.url,auth:req.headers.authorization});res.setHeader('content-type','application/json');if(req.url==='/bootstrap'){res.setHeader('etag','v1');res.end(JSON.stringify({keepAwakeEnabled:true,usageMetricsEnabled:false,unknownSetting:'discard'}));}else if(req.url==='/api/oauth/account')res.end(JSON.stringify({uuid:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',tagged_id:'account',memberships:[{organization:{uuid:'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',name:'Org'}}]}));else {let surface=req.url.split('/').pop();res.end(JSON.stringify({model_selector_config:[{id:surface,models:[{id:'claude-test',name:surface}]}]}));}});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>new Promise(r=>server.close(r)));const base=`http://127.0.0.1:${server.address().port}`;
+ const controller=createHybridIdentityController({launchSlot:'fixture-slot',slotForBootstrap:()=> 'fixture-slot',store:{read:()=>undefined,record:(_slot,identity,{isCurrent})=>{if(!isCurrent())return undefined;owner.push(identity);return true}}});
+ const membership=createHybridMemberships({fetch,...controller.membershipIdentity}),selector=createHybridModelSelector({fetch});membership.onChange(()=>updates++);
+ const intake=(body,origin,opts)=>{const parsed=parseBootstrapSchema(body);const filtered=applyBootstrapUrlPolicy(parsed.config,{metadata:FIELD_METADATA,channel:opts.channel,trustedOrigin:origin});return {config:filtered.config,rejected:filtered.rejected,warnings:[],keyedParseErrors:parsed.errors};};
+ const validate=createBootstrapResponseValidator({intake,hasNonDesktopFailure:()=>false,describeFailure:()=> 'no recognized keys'});
+ let membershipPromise,selectorPromise;const service=createHybridBootstrapFetch({fetch,resolveAuth:async()=>({ok:true,bearer:'fixture',oidc:{apiOrigin:base,orgUuid:'org'},headers:{Authorization:'Bearer fixture'}}),validate,primeMemberships:(...args)=>membershipPromise=membership.prime(...args),primeModels:args=>selectorPromise=selector.prime(args)});
+ const result=await service.run(`${base}/bootstrap`);await Promise.all([membershipPromise,selectorPromise]);assert.equal(result.ok,true);assert.deepEqual(result.value,{keepAwakeEnabled:true,usageMetricsEnabled:false});assert.equal(result.value.unknownSetting,undefined);assert.equal(membership.getMemberships()[0].name,'Org');assert.equal(owner[0].accountTaggedId,'account');assert.equal(controller.state.current(),'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');assert.equal(selector.get().chat['claude-test'].name,'chat');assert.equal(updates,1);assert.equal(hits.length,5);assert.ok(hits.every(h=>h.auth==='Bearer fixture'));
+});

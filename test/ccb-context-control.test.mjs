@@ -1,0 +1,100 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const { createCcbKernel } = createRequire(import.meta.url)('../desktop/ccb-kernel.cjs');
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+test('context control binds the actor, isolates concurrent responses and redacts private data', { timeout: 20000 }, async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-context-'));
+  const script = path.join(dir, 'fixture.cjs');
+  const mode = path.join(dir, 'mode');
+  const log = path.join(dir, 'requests');
+  fs.writeFileSync(mode, 'ok');
+  fs.writeFileSync(script, String.raw`
+const readline=require('node:readline'),fs=require('node:fs'),path=require('node:path');
+let count=0;
+const out=x=>process.stdout.write(JSON.stringify(x)+'\n');
+readline.createInterface({input:process.stdin}).on('line',line=>{
+ const f=JSON.parse(line); if(f.type!=='control_request')return;
+ const reply=body=>out({type:'control_response',response:{subtype:'success',request_id:f.request_id,response:body}});
+ if(f.request.subtype==='initialize')return reply({});
+ fs.appendFileSync(path.join(__dirname,'requests'),JSON.stringify(f.request)+'\n');
+ if(f.request.subtype!=='get_context_usage')return reply({});
+ const m=fs.readFileSync(path.join(__dirname,'mode'),'utf8'); count++;
+ const body={categories:[{name:'Messages',tokens:count,color:'purple_FOR_SUBAGENTS_ONLY'},{name:'SECRET-category',tokens:2,color:'SECRET-color'}],totalTokens:count,maxTokens:100,rawMaxTokens:200,percentage:1,memoryFiles:[{path:'CLAUDE.md',tokens:12,content:'SECRET-content'},{path:'SECRET-path'}],mcpTools:[{name:'Read',serverName:'fixture',tokens:3,input:'SECRET-input'},null,{name:'bad',serverName:'fixture',tokens:-1}],agents:[{agentType:'reviewer',tokens:5,prompt:'SECRET-prompt'},{agentType:'bad',tokens:'5'}],models:[{name:'SECRET-model'}],apiUsage:{secret:'SECRET-api'}};
+ if(m==='error')return out({type:'control_response',response:{subtype:'error',request_id:f.request_id,error:'SECRET-error'}});
+ if(m==='invalid')return reply({categories:[]});
+ if(m==='exit')return process.exit(0);
+ if(m==='wait')return setTimeout(()=>reply(body),400);
+ if(m==='reverse')return setTimeout(()=>reply(body),count%2?60:5);
+ return reply(body);
+});`);
+  const kernel = createCcbKernel({ bunPath: process.execPath, entryPath: script, kernelRoot: dir, cwd: dir,
+    homeDir: path.join(dir, 'home'), scratchDir: path.join(dir, 'scratch'), contextControlTimeoutMs: 160 });
+  const events = [];
+  kernel.onEvent(e => events.push(e));
+  t.after(async () => { await kernel.dispose(); fs.rmSync(dir, { recursive: true, force: true }); });
+  await assert.rejects(kernel.getContextUsage('missing', 'actor'), e => e.code === 'CCB_ACTOR_STALE');
+  assert.equal(kernel.getActiveProcesses().length, 0);
+  kernel.start({ sessionId: 's' });
+  await kernel.initialize('s');
+  const actor = kernel.getInfo('s').actorToken;
+  await assert.rejects(kernel.getContextUsage('s', 'wrong'), e => e.code === 'CCB_ACTOR_STALE');
+  fs.writeFileSync(mode, 'reverse');
+  const [a, b] = await Promise.all([kernel.getContextUsage('s', actor), kernel.getContextUsage('s', actor)]);
+  assert.equal(a.totalTokens, 1); assert.equal(b.totalTokens, 2);
+  assert.equal(a.actorToken, actor); assert.equal(a.rawMaxTokens, 200);
+  assert.deepEqual(a.categories[1], { name:'Other', tokens:2, color:'inactive' });
+  assert.deepEqual(a.memoryFiles, [{ path: 'CLAUDE.md', tokens: 12 }]);
+  assert.deepEqual(a.mcpTools, [{ name: 'Read', serverName: 'fixture', tokens: 3 }]);
+  assert.deepEqual(a.agents, [{ agentType: 'reviewer', tokens: 5 }]);
+  assert.ok(!JSON.stringify([a,b,events]).includes('SECRET-'));
+  assert.deepEqual(fs.readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse), [{subtype:'get_context_usage'},{subtype:'get_context_usage'}]);
+  fs.writeFileSync(mode, 'error');
+  await assert.rejects(kernel.getContextUsage('s', actor), e => e.code === 'CCB_CONTROL_REJECTED' && !e.message.includes('SECRET'));
+  fs.writeFileSync(mode, 'invalid');
+  await assert.rejects(kernel.getContextUsage('s', actor), e => e.code === 'CCB_CONTROL_INVALID');
+  fs.writeFileSync(mode, 'wait');
+  await assert.rejects(kernel.getContextUsage('s', actor), e => e.code === 'CCB_CONTROL_TIMEOUT');
+  await delay(450);
+  assert.ok(!JSON.stringify(events).includes('SECRET-'));
+  const pending = kernel.getContextUsage('s', actor);
+  const settled = Promise.allSettled([pending]);
+  await delay(30);
+  kernel.removeSession('s');
+  assert.equal((await settled)[0].reason.code, 'CCB_SESSION_REMOVED');
+  kernel.start({ sessionId: 's' }); await kernel.initialize('s');
+  const replacement = kernel.getInfo('s').actorToken;
+  assert.notEqual(actor, replacement);
+  await assert.rejects(kernel.getContextUsage('s', actor), e => e.code === 'CCB_ACTOR_STALE');
+  fs.writeFileSync(mode, 'exit');
+  await assert.rejects(kernel.getContextUsage('s', replacement), e => e.code === 'CCB_CONTROL_EXIT' || e.code === 'CCB_CONTEXT_FAILED');
+  await assert.rejects(kernel.getContextUsage('s', replacement), e => e.code === 'CCB_ACTOR_STALE');
+  kernel.removeSession('s');
+  fs.writeFileSync(mode, 'wait');
+  kernel.start({ sessionId: 's' }); await kernel.initialize('s');
+  const finalActor = kernel.getInfo('s').actorToken;
+  const closing = Promise.allSettled([kernel.getContextUsage('s', finalActor)]);
+  await delay(30); const disposed = kernel.dispose();
+  assert.equal((await closing)[0].reason.code, 'CCB_KERNEL_DISPOSED');
+  await disposed;
+});
+
+test('published CCB context control against isolated local fixture', {skip:process.env.CCB_REAL_CONTEXT_PROOF !== '1', timeout:60000}, async t => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'real-ccb-context-'));
+  for(const key of Object.keys(process.env)) if(/TOKEN|API_KEY|AUTH|SECRET|PASSWORD|CREDENTIAL/i.test(key)) delete process.env[key];
+  for(const key of ['HOME','USERPROFILE','APPDATA','LOCALAPPDATA']) { process.env[key]=path.join(dir,key); fs.mkdirSync(process.env[key],{recursive:true}); }
+  Object.assign(process.env,{ANTHROPIC_BASE_URL:'http://127.0.0.1:9',ANTHROPIC_API_KEY:'fixture-only',CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:'1',DISABLE_AUTOUPDATER:'1'});
+  const root=process.env.CCB_REAL_CORE || 'D:/CodexArtifacts/claude-code-desktop/R378-AUTH-RELAY-OWNERSHIP-ASAR/resources/agent-core';
+  const kernel=createCcbKernel({bunPath:path.join(root,'bun/bun.exe'),entryPath:path.join(root,'claude-code/dist/cli-bun.js'),kernelRoot:path.join(root,'claude-code'),cwd:dir,homeDir:path.join(dir,'ccb-home'),scratchDir:path.join(dir,'scratch'),startupTimeoutMs:30000,contextControlTimeoutMs:20000});
+  t.after(async()=>{await kernel.dispose(); fs.rmSync(dir,{recursive:true,force:true});});
+  kernel.start({sessionId:'real',cwd:dir}); await kernel.initialize('real');
+  const actor=kernel.getInfo('real').actorToken;
+  const result=await kernel.getContextUsage('real',actor);
+  assert.equal(result.actorToken,actor); assert.ok(Array.isArray(result.categories));
+  assert.ok(Number.isFinite(result.totalTokens)); assert.ok(result.rawMaxTokens>0);
+});

@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+const {createSessionKernel}=createRequire(import.meta.url)('../desktop/session-kernel.cjs');
+
+test('injected import confirmation rejects stale session and actor and rolls back failed persistence',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'kernel-import-'));
+ t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const store=path.join(dir,'sessions.json'), id='local_import', stage=path.join(dir,'stage.jsonl');
+ const record={sessionId:id,cwd:dir,workingDir:dir,originCwd:dir,importedFrom:'terminalCli',stagedTranscriptPath:stage,cliSessionId:'f9d7247d-2b29-41b3-b11a-80410bb66117'};
+ fs.writeFileSync(store,JSON.stringify({sessions:[record],transcripts:{[id]:[{message:{content:'original'}}]}}));
+ let actor=null, capture, reenter=false;
+ const lease={isCurrent:()=>true};
+ const listeners=new Set();
+ const backend={id:'ccb',start(){},sendMessage(){},cancel(){},onEvent(fn){listeners.add(fn);return ()=>listeners.delete(fn)},dispose(){},getInfo(){return {actorToken:actor}},getActiveProcesses(){return actor?[{sessionId:id}]:[]}};
+ const host={confirm:context=>new Promise(resolve=>{capture={...context,resolve}})};
+ const kernel=createSessionKernel({backend,storePath:store,emit(event){if(reenter && event.type==='persist_failed')kernel.update(id,{title:'reentrant update'})},historyImportResumeHost:host});
+ t.after(()=>kernel.dispose());
+ const proof={cliSessionId:record.cliSessionId,cwd:dir,stagingPath:stage,homeDir:dir,targetPath:path.join(dir,'target.jsonl')};
+ let attempt=kernel.confirmImportedSessionResume(id); await Promise.resolve();
+ assert.equal(kernel.confirmImportedSessionResume(id),false);
+ kernel.update(id,{title:'changed'});
+ assert.equal(capture.commit(proof,lease),false);capture.resolve();assert.equal(await attempt,false);
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();actor='new-actor';
+ assert.equal(capture.commit(proof,lease),false);capture.resolve();assert.equal(await attempt,false);actor=null;
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ actor='brief-actor';for(const fn of listeners)fn({type:'query_installed',sessionId:id,actorToken:actor});actor=null;
+ assert.equal(capture.commit(proof,lease),false);capture.resolve();assert.equal(await attempt,false);
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ kernel.setTranscript(id,[{message:{content:'original'}}]);
+ assert.equal(capture.commit(proof,lease),false);capture.resolve();assert.equal(await attempt,false);
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ kernel.getTranscript(id)[0].message.content='changed';
+ assert.equal(capture.commit(proof,lease),false);capture.resolve();assert.equal(await attempt,false);
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ const rename=fs.renameSync;try{reenter=true;fs.renameSync=()=>{throw Error('fixture write failure')};assert.equal(capture.commit(proof,lease),false)}finally{fs.renameSync=rename;reenter=false}
+ capture.resolve();assert.equal(await attempt,false);assert.equal(kernel.getSession(id).resumeConfirmed,undefined);
+ assert.equal(kernel.getSession(id).title,'reentrant update');
+ await assert.rejects(kernel.sendMessage(id,'blocked'),{name:'ImportedResumeGateError'});
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ const lateCommit=Promise.resolve().then(()=>Promise.resolve()).then(()=>Promise.resolve()).then(()=>capture.commit(proof,lease));
+ capture.resolve();const settled=await attempt;const late=await lateCommit;
+ assert.equal(settled,late);
+ if (settled) return;
+ attempt=kernel.confirmImportedSessionResume(id);await Promise.resolve();assert.equal(capture.commit(proof,lease),true);capture.resolve();assert.equal(await attempt,true);
+ assert.equal(JSON.parse(fs.readFileSync(store,'utf8')).sessions[0].resumeConfirmed,true);
+ assert.equal(capture.commit(proof,lease),false);
+});
+
+test('released lease and replacement during failed save cannot confirm or contaminate session',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'import-lease-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const storePath=path.join(dir,'sessions.json'),id='local_lease',stage=path.join(dir,'stage');
+ const record={sessionId:id,cwd:dir,workingDir:dir,originCwd:dir,importedFrom:'terminalCli',stagedTranscriptPath:stage,cliSessionId:'f9d7247d-2b29-41b3-b11a-80410bb66117'};
+ fs.writeFileSync(storePath,JSON.stringify({sessions:[record],transcripts:{}}));
+ let context,resolveHost,active=true,recreate=false;
+ const lease={isCurrent:()=>active};
+ const host={confirm:c=>new Promise(resolve=>{context=c;resolveHost=resolve})};
+ const backend={id:'ccb',start(){},sendMessage(){},cancel(){},onEvent(){return ()=>{}},dispose(){},getInfo(){return {}},getActiveProcesses(){return []}};
+ const kernel=createSessionKernel({backend,storePath,historyImportResumeHost:host,emit:e=>{if(recreate&&e.type==='persist_failed'){recreate=false;kernel.remove(id);kernel.start({sessionId:id,cwd:dir})}}});
+ t.after(()=>kernel.dispose());
+ const proof={cliSessionId:record.cliSessionId,cwd:dir,stagingPath:stage,homeDir:dir,targetPath:path.join(dir,'target')};
+ let pending=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ assert.equal(context.commit(proof),false);
+ assert.equal(context.commit(proof,{isCurrent:async()=>true}),false);
+ assert.equal(context.commit(proof,{isCurrent:()=>{throw Error('invalid lease')}}),false);
+ active=false;resolveHost();assert.equal(context.commit(proof,lease),false);assert.equal(await pending,false);
+ active=true;pending=kernel.confirmImportedSessionResume(id);await Promise.resolve();
+ const rename=fs.renameSync;try{recreate=true;fs.renameSync=()=>{throw Error('write failed')};assert.equal(context.commit(proof,lease),false)}finally{fs.renameSync=rename}
+ resolveHost();assert.equal(await pending,false);
+ const replacement=kernel.getSession(id);assert.equal(replacement.importedFrom,undefined);assert.equal(replacement.stagedTranscriptPath,undefined);
+});

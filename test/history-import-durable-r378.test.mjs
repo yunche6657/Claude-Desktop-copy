@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {spawn} from 'node:child_process';
+import {createRequire} from 'node:module';
+const modulePath=path.resolve('desktop/history-import-durable.cjs');
+const {createHistoryImportDurableStore}=createRequire(import.meta.url)(modulePath);
+const childCode=`const s=require(process.argv[1]).createHistoryImportDurableStore({directory:process.argv[2]});s.runExclusive(async l=>{await l.commit({sourceSessionId:'child',sessionId:'child-session'},()=>true);process.stdout.write('LOCKED\\n');await new Promise(()=>{});}).catch(e=>{console.error(e);process.exitCode=1});setInterval(()=>{},1000);`;
+function start(dir){const p=spawn(process.execPath,['-e',childCode,modulePath,dir],{windowsHide:true,stdio:['ignore','pipe','pipe']});const ready=new Promise((resolve,reject)=>{p.stdout.once('data',()=>resolve());p.once('error',reject);p.once('exit',c=>reject(Error('child exited '+c)));});return {p,ready};}
+async function fixture(t){const d=await fs.mkdtemp(path.join(os.tmpdir(),'history-durable-'));t.after(()=>fs.rm(d,{recursive:true,force:true}));return d;}
+test('independent process holds exclusion; crash requires external proof and preserves committed state',async t=>{const d=await fixture(t),s=createHistoryImportDurableStore({directory:d});await s.runExclusive(l=>l.commit({sourceSessionId:'source',sessionId:'session'},()=>true));const {p,ready}=start(d);t.after(()=>{if(p.exitCode===null)p.kill();});await ready;assert.deepEqual(await s.runExclusive(()=>assert.fail()),{status:'busy'});const exited=new Promise(r=>p.once('exit',r));p.kill();await exited;assert.deepEqual(await s.recoverLock({withExclusiveAccess:f=>f(),isAbandoned:()=>false}),{status:'busy'});assert.deepEqual(await s.recoverLock({withExclusiveAccess:f=>f(),isAbandoned:()=>true}),{status:'unlocked'});const state=await s.runExclusive(l=>l.read());assert.deepEqual(state.sourceIds,['source','child']);assert.equal(state.registrations.source.sessionId,'session');assert.equal(state.registrations.child.sessionId,'child-session');});
+test('one publication contains both effects, refuses duplicates and serializes lease calls',async t=>{const d=await fixture(t),s=createHistoryImportDurableStore({directory:d});let old;await s.runExclusive(async l=>{old=l;assert.deepEqual(await Promise.all([l.commit({sourceSessionId:'a',sessionId:'1'},()=>true),l.commit({sourceSessionId:'b',sessionId:'2'},()=>true),l.commit({sourceSessionId:'a',sessionId:'3'},()=>true),l.commit({sourceSessionId:'c',sessionId:'4'},()=>false)]),['registered','registered','refused','refused']);});assert.throws(()=>old.read(),/expired/);const x=await s.runExclusive(l=>l.read());assert.deepEqual(x.sourceIds,['a','b']);assert.deepEqual(Object.keys(x.registrations),['a','b']);assert.equal(x.version,2);});
