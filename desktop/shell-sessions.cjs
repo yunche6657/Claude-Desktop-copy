@@ -23,7 +23,32 @@
 // terminal semantics.
 'use strict';
 
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
+const { TextDecoder } = require('node:util');
+const path = require('node:path');
+
+// CMD writes pipe output in its console code page, not necessarily UTF-8. Keep
+// that code page: changing it with chcp also changes how CMD reads piped input.
+// Query once per shell executable; chcp's final number is locale-independent.
+const cmdEncodings = new Map();
+function defaultOutputEncoding(shellPath) {
+  if (process.platform !== 'win32' || !/^cmd(?:\.exe)?$/i.test(path.win32.basename(shellPath))) return 'utf-8';
+  if (cmdEncodings.has(shellPath)) return cmdEncodings.get(shellPath);
+  const result = spawnSync(shellPath, ['/d', '/c', 'chcp'], {
+    windowsHide: true, encoding: 'ascii', timeout: 3000,
+  });
+  const codePage = result.status === 0 && /([0-9]+)\s*$/.exec(result.stdout || '');
+  const labels = {
+    65001: 'utf-8', 936: 'gbk', 54936: 'gb18030', 950: 'big5',
+    932: 'shift_jis', 949: 'euc-kr', 866: 'ibm866', 874: 'windows-874',
+    1250: 'windows-1250', 1251: 'windows-1251', 1252: 'windows-1252',
+    1253: 'windows-1253', 1254: 'windows-1254', 1255: 'windows-1255',
+    1256: 'windows-1256', 1257: 'windows-1257', 1258: 'windows-1258',
+  };
+  const encoding = labels[codePage && codePage[1]] || 'utf-8';
+  cmdEncodings.set(shellPath, encoding);
+  return encoding;
+}
 
 /** Default shell for the host platform. */
 function defaultShell() {
@@ -38,9 +63,10 @@ function defaultShell() {
  *   emit: (event: object) => void,       // pushes to the onShellPtyEvent channel
  *   log?: (msg: string) => void,
  *   spawnImpl?: Function,                // injectable for tests
+ *   outputEncoding?: string,             // explicit stream encoding for tests/hosts
  * }} opts
  */
-function createShellSessions({ emit, log = () => {}, spawnImpl } = {}) {
+function createShellSessions({ emit, log = () => {}, spawnImpl, outputEncoding } = {}) {
   const doSpawn = spawnImpl || spawn;
   /** sessionId -> { child, shell, cols, rows, cwd, closed, buffer } */
   const sessions = new Map();
@@ -75,7 +101,12 @@ function createShellSessions({ emit, log = () => {}, spawnImpl } = {}) {
       : (options && typeof options.cwd === 'string' ? options.cwd : undefined);
 
     let child;
+    let stdoutDecoder;
+    let stderrDecoder;
     try {
+      const encoding = outputEncoding || (spawnImpl ? 'utf-8' : defaultOutputEncoding(shellPath));
+      stdoutDecoder = new TextDecoder(encoding);
+      stderrDecoder = new TextDecoder(encoding);
       child = doSpawn(shellPath, [], {
         cwd: workingDirectory,
         env: process.env,
@@ -111,17 +142,22 @@ function createShellSessions({ emit, log = () => {}, spawnImpl } = {}) {
       sessions.delete(sessionId);
     });
 
-    child.stdout.on('data', (chunk) => {
-      const text = chunk.toString('utf8');
+    const publish = (text) => {
+      if (!text) return;
       appendBuffer(entry, text);
       send({ type: 'shell_pty_data', sessionId, data: text });
+    };
+    // Decoders belong to individual streams and sessions. A byte sequence may
+    // span data events, and stderr must never complete a stdout character.
+    child.stdout.on('data', (chunk) => {
+      publish(typeof chunk === 'string' ? chunk : stdoutDecoder.decode(chunk, { stream: true }));
     });
     child.stderr.on('data', (chunk) => {
-      const text = chunk.toString('utf8');
-      appendBuffer(entry, text);
-      send({ type: 'shell_pty_data', sessionId, data: text });
+      publish(typeof chunk === 'string' ? chunk : stderrDecoder.decode(chunk, { stream: true }));
     });
     child.on('close', (code, signal) => {
+      publish(stdoutDecoder.decode());
+      publish(stderrDecoder.decode());
       entry.closed = true;
       const reason = signal ? `signal ${signal}` : `exit ${code}`;
       send({ type: 'shell_pty_close', sessionId, reason });

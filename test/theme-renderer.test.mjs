@@ -331,7 +331,7 @@ test('样式表没有任何全局选择器，也不碰 :root / html / body', () 
 });
 
 test('作用域只落在 Code 子树，覆盖路径与反查路径都与静态标记一致', () => {
-  const scopeRule = scopedStylesheet().split('\n').find((line) => line.startsWith('[' + SCOPE_ATTRIBUTE + ']{'));
+  const scopeRule = scopedStylesheet().split('\n').find((line) => line.startsWith('[' + SCOPE_ATTRIBUTE + '][data-xiaoke-theme-custom]{'));
   assert.ok(scopeRule, '缺少作用域根规则');
   // 变量只在这里定义，说明改的是 Code 子树的继承值而不是 :root
   assert.match(scopeRule, /--xk-bg:#/);
@@ -339,7 +339,7 @@ test('作用域只落在 Code 子树，覆盖路径与反查路径都与静态�
   assert.equal(/--cds-text-primary/.test(scopeRule), true);
   // 内容容器必须透明，否则负层背景永远看不见
   const css = scopedStylesheet();
-  assert.match(css, /\[data-xiaoke-theme-active\] :where\(\.dframe-content-inner,\.epitaxy-root,main\)\{background-color:transparent;\}/);
+  assert.match(css, /\[data-xiaoke-theme-active\]\[data-xiaoke-theme-custom\] :where\(\.dframe-content-inner,\.epitaxy-root,main\)\{background-color:transparent;\}/);
 });
 
 test('背景层规则同时锁死指针事件与层级', () => {
@@ -365,10 +365,10 @@ test('交付的玻璃默认值（0/0/#000000）不会把面板变成透明或黑
   // 所以面板底色必须取调色板背景，并且带一个可读下限。
   const css = scopedStylesheet();
   const panelRule = css.split('\n').find((line) => line.includes('[data-xk-part="panel"]{'));
-  assert.match(panelRule, /background:color-mix\(in srgb,var\(--xk-bg\)/,
-    '面板底色必须取调色板背景而不是 tint');
-  assert.match(panelRule, /max\(0\.72,var\(--xk-glass-opacity\)\)/,
-    '面板底色需要可读下限，否则 opacity:0 时面板不可见');
+  assert.match(panelRule, /background:var\(--cds-surface-0,#fcfcfb\)/,
+    '设置内弹层始终使用独立的不透明原生底色');
+  assert.match(panelRule, /--xk-text:var\(--cds-text-primary,#151515\)/,
+    '移入设置后弹层必须自行定义文本变量');
   assert.equal(/background:color-mix\(in srgb,var\(--xk-tint\)/.test(panelRule), false,
     '面板不能直接用 tint 当底色');
   // glass 仍然要生效：blur 进 backdrop-filter
@@ -1243,6 +1243,22 @@ test('切走 Code 视图时预览一起收掉：切回来看到的是持久态',
   assert.equal(modeOf(doc), 'light', '切回来渲染的是持久态，不是上次那份弃掉的预览');
   assert.equal(api.draft.mode, DEFAULT_THEME_STATE.mode);
   assert.equal(snapshot(api.saved), savedBefore);
+});
+
+test('默认状态不启用覆盖，深色场景自动选择深色并可恢复原样', () => {
+  const {doc, frameRoot, content} = makeCodeDocument();
+  frameRoot.setAttribute('data-mode','light');
+  const win=makeWindow(doc);
+  install(win,{state:DEFAULT_THEME_STATE,scenes:BUILTIN_SCENES});
+  assert.equal(content.hasAttribute('data-xiaoke-theme-custom'),false);
+  assert.equal(frameRoot.getAttribute('data-mode'),'light');
+  const dark=BUILTIN_SCENES.find(s=>s.mode==='dark');
+  win.__xiaokeTheme.apply({...DEFAULT_THEME_STATE,scene:dark.id,mode:'system'});
+  assert.equal(content.getAttribute(MODE_ATTRIBUTE),'dark');
+  assert.equal(content.hasAttribute('data-xiaoke-theme-custom'),true);
+  win.__xiaokeTheme.apply(DEFAULT_THEME_STATE);
+  assert.equal(content.hasAttribute('data-xiaoke-theme-custom'),false);
+  assert.equal(frameRoot.getAttribute('data-mode'),'light');
 });
 
 test('深浅主题同步frame与内部cds容器，卸载后恢复原模式', () => {

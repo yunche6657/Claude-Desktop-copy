@@ -67,8 +67,8 @@ function sanitizeThemeState(raw) {
     var cleaned = value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
     return cleaned ? cleaned.slice(0, 60) : fallback;
   }
-  var LIGHT = { background: '#f7f7f5', text: '#1b1b19', muted: '#6b6b64', accent: '#c96442' };
-  var DARK = { background: '#141417', text: '#f2f0eb', muted: '#9a9a93', accent: '#d97757' };
+  var LIGHT = { background: '#fcfcfb', text: '#151515', muted: '#6f6e6a', accent: '#c96442' };
+  var DARK = { background: '#151515', text: '#f0efec', muted: '#8d8b86', accent: '#d97757' };
   var src = raw && typeof raw === 'object' ? raw : {};
   var glass = src.glass && typeof src.glass === 'object' ? src.glass : {};
   var colors = src.colors && typeof src.colors === 'object' ? src.colors : {};
@@ -82,9 +82,9 @@ function sanitizeThemeState(raw) {
     scene: scene,
     motion: motion,
     glass: {
-      blur: Math.round(clamp(glass.blur, 0, 64, 18) * 10) / 10,
-      opacity: Math.round(clamp(glass.opacity, 0, 1, 0.55) * 100) / 100,
-      tint: hex(glass.tint, '#101014'),
+      blur: Math.round(clamp(glass.blur, 0, 64, 0) * 10) / 10,
+      opacity: Math.round(clamp(glass.opacity, 0, 1, 0) * 100) / 100,
+      tint: hex(glass.tint, '#000000'),
     },
     colors: { light: colorsOf(colors.light, LIGHT), dark: colorsOf(colors.dark, DARK) },
   };
@@ -430,7 +430,9 @@ function buildBuiltinScenes(sanitizeSvg) {
 function scopedStylesheet() {
   const S = '[' + SCOPE_ATTRIBUTE + ']';
   const U = '[data-xiaoke-theme-ui]';
+  const C = S + '[data-xiaoke-theme-custom]';
   const parts = [
+    S + ' > ' + U + '{pointer-events:none;z-index:2147483000;--xk-bg:var(--cds-surface-0,#fcfcfb);--xk-text:var(--cds-text-primary,#151515);--xk-muted:var(--cds-text-secondary,#6f6e6a);--xk-accent:var(--cds-text-accent,#c96442);--xk-glass-blur:0px;}',
     '/* 小克 Code 主题 — desktop/theme-renderer.cjs 注入。所有选择器都限定在 Code 视图根节点内。 */',
     // 变量映射：只覆盖 Code 子树，不动 :root，因此 Chat / Cowork 完全不受影响
     S + '{'
@@ -468,8 +470,8 @@ function scopedStylesheet() {
       + 'pointer-events:none;background-color:var(--xk-tint);opacity:var(--xk-glass-opacity);}',
     // UI 包装层：本身不吃事件，只有按钮和面板自己 auto
     S + ' > ' + U + '{position:absolute;inset:0;z-index:2147483000;pointer-events:none;}',
-    S + ' ' + U + ' [data-xk-part="launch"]{position:absolute;'
-      + 'top:calc(var(--df-chrome-bar-height,44px) + 10px);right:14px;pointer-events:auto;'
+    S + ' ' + U + ' [data-xk-part="launch"]{position:fixed;'
+      + 'bottom:82px;right:20px;z-index:2147483640;pointer-events:auto;'
       + 'display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;'
       + 'border:1px solid color-mix(in srgb,var(--xk-text) 18%,transparent);border-radius:999px;'
       + 'background:color-mix(in srgb,var(--xk-bg) 88%,transparent);color:var(--xk-text);'
@@ -484,12 +486,15 @@ function scopedStylesheet() {
     //     opacity:0 会让面板全透明（面板消失），而 tint 的黑色配上浅色模式的近黑文字
     //     会变成黑底黑字（读不出来）。两个都是实测会出现的退化，所以在样式里就锁住下限。
     //   * glass 仍然生效：blur 直接进 backdrop-filter，tint 用在场景染色层与按钮上。
-    S + ' ' + U + ' [data-xk-part="panel"]{position:absolute;'
-      + 'top:calc(var(--df-chrome-bar-height,44px) + 44px);right:14px;pointer-events:auto;'
+    S + ' ' + U + ' [data-xk-part="panel"]{position:fixed;'
+      + 'top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483640;pointer-events:auto;'
+      + '--xk-bg:var(--cds-surface-0,#fcfcfb);--xk-text:var(--cds-text-primary,#151515);'
+      + '--xk-muted:var(--cds-text-secondary,#6f6e6a);--xk-accent:var(--cds-text-accent,#c96442);'
+      + '--xk-glass-blur:0px;--xk-glass-opacity:1;'
       + 'display:flex;flex-direction:column;gap:10px;box-sizing:border-box;'
-      + 'width:min(384px,calc(100vw - 28px));max-height:calc(100% - 120px);overflow:auto;padding:14px;'
+      + 'width:min(520px,calc(100vw - 64px));max-height:calc(100vh - 96px);overflow:auto;padding:20px;'
       + 'border:1px solid color-mix(in srgb,var(--xk-text) 16%,transparent);border-radius:14px;'
-      + 'background:color-mix(in srgb,var(--xk-bg) calc(max(0.72,var(--xk-glass-opacity)) * 100%),transparent);'
+      + 'background:var(--cds-surface-0,#fcfcfb);'
       + 'color:var(--xk-text);font:inherit;font-size:12px;line-height:1.5;'
       + 'backdrop-filter:blur(var(--xk-glass-blur));box-shadow:0 18px 48px rgba(0,0,0,.28);}',
     S + ' ' + U + ' [data-xk-part="panel"][hidden]{display:none}',
@@ -517,7 +522,7 @@ function scopedStylesheet() {
     S + ' ' + U + ' [data-xk-part="colors"]{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
     S + ' ' + U + ' [data-xk-part="swatch"]{display:flex;align-items:center;gap:6px;}',
     S + ' ' + U + ' [data-xk-part="swatch"] input{width:26px;height:22px;padding:0;border:0;background:transparent;cursor:pointer;}',
-    S + ' ' + U + ' [data-xk-part="footer"]{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}',
+    S + ' ' + U + ' [data-xk-part="footer"]{position:sticky;bottom:-20px;flex-shrink:0;background:var(--cds-surface-0,#fcfcfb);padding:12px 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}',
     S + ' ' + U + ' [data-xk-part="action"]{appearance:none;border:1px solid color-mix(in srgb,var(--xk-text) 20%,transparent);'
       + 'border-radius:8px;background:transparent;color:inherit;font:inherit;padding:4px 10px;cursor:pointer;}',
     S + ' ' + U + ' [data-xk-part="action"][data-xk-role="primary"]{background:var(--xk-accent);border-color:var(--xk-accent);color:#fff;}',
@@ -528,7 +533,14 @@ function scopedStylesheet() {
     // 关动效：只作用于本面板，SVG 动效在 data URI 生成阶段就被剥掉
     S + '[' + MOTION_ATTRIBUTE + '="off"] ' + U + ' *{transition:none;animation:none;}',
   ];
-  return parts.join('\n');
+  return parts.map(function (rule) {
+    // The native frontend owns its default palette and surface hierarchy.
+    // Keep the launcher available, but activate visual overrides only for customization.
+    if (rule.indexOf(S + '{') === 0 || rule.indexOf(S + ' .cds-root') === 0 || rule.indexOf(S + '[' + MODE_ATTRIBUTE) === 0 || rule.indexOf(S + ' :where(') === 0) {
+      return C + rule.slice(S.length);
+    }
+    return rule;
+  }).join('\n');
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -624,8 +636,15 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
     var mql = mediaQuery('(prefers-reduced-motion: reduce)');
     return !!(mql && mql.matches);
   }
+  function isCustomTheme(state) {
+    var base = sanitizeThemeState({});
+    return !!state.scene || state.mode !== 'system' || JSON.stringify(state.colors) !== JSON.stringify(base.colors)
+      || state.glass.blur !== base.glass.blur || state.glass.opacity !== base.glass.opacity || state.glass.tint !== base.glass.tint;
+  }
   function resolvedMode(state) {
     if (state.mode === 'light' || state.mode === 'dark') return state.mode;
+    var scene = sceneById(state.scene);
+    if (scene && (scene.mode === 'dark' || scene.mode === 'light')) return scene.mode;
     return prefersDark() ? 'dark' : 'light';
   }
   function motionOn(state) {
@@ -675,6 +694,7 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
   function restoreModes() {
     for (var m = 0; m < BOX.modeNodes.length; m++) {
       var entry = BOX.modeNodes[m];
+      entry.node.removeAttribute('data-xiaoke-theme-frame');
       if (entry.original === null) entry.node.removeAttribute('data-mode');
       else entry.node.setAttribute('data-mode', entry.original);
     }
@@ -686,6 +706,7 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
   function applyModes(root, mode) {
     var frame = root.closest ? root.closest('.dframe-root') : null;
     var host = frame || root;
+    if (frame) frame.setAttribute('data-xiaoke-theme-frame', '');
     if (BOX.windowMode !== mode) {
       BOX.windowMode = mode;
       var pendingMode = callBridge('setWindowMode', mode);
@@ -710,6 +731,7 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
     mutate(function () {
       try {
         restoreModes();
+        root.removeAttribute('data-xiaoke-theme-custom');
         root.removeAttribute(SCOPE);
         root.removeAttribute(MODEATTR);
         root.removeAttribute(MOTIONATTR);
@@ -755,6 +777,7 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
         BOX.img = img;
       });
     }
+    bg.style.setProperty('display', isCustomTheme(state) ? '' : 'none');
     var scene = sceneById(state.scene);
     var svg = scene ? (motionOn(state) ? scene.svg : stripSceneAnimation(scene.svg)) : '';
     var uri = svg ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) : '';
@@ -784,7 +807,13 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
     var mode = resolvedMode(state);
     var palette = state.colors[mode];
     mutate(function () {
-      applyModes(root, mode);
+      if (isCustomTheme(state)) {
+        applyModes(root, mode);
+        root.setAttribute('data-xiaoke-theme-custom', '');
+      } else {
+        if (BOX.modeNodes.length) restoreModes();
+        root.removeAttribute('data-xiaoke-theme-custom');
+      }
       root.setAttribute(SCOPE, '');
       root.setAttribute(MODEATTR, mode);
       root.setAttribute(MOTIONATTR, motionOn(state) ? 'on' : 'off');
@@ -1041,7 +1070,11 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
       if (!node || node === refs.grid || !node.getAttribute) return;
       var id = node.getAttribute('data-xk-scene');
       if (!id) return;
-      editDraft(function (next) { next.scene = id; });
+      editDraft(function (next) {
+        next.scene = id;
+        var scene = sceneById(id);
+        if (scene) next.mode = scene.mode;
+      });
     });
     ['light', 'dark'].forEach(function (group) {
       ['background', 'text', 'muted', 'accent'].forEach(function (key) {
@@ -1197,7 +1230,32 @@ function xiaokeThemePageMain(cfg, sanitizeThemeState, sanitizeThemeScenes, sanit
     ensureUi(root);
     if (BOX.launch && BOX.launch.parentNode !== BOX.ui) BOX.ui.appendChild(BOX.launch);
     if (BOX.panel && BOX.panel.parentNode !== BOX.ui) BOX.ui.appendChild(BOX.panel);
-    if (BOX.ui && BOX.ui.parentNode !== root) root.appendChild(BOX.ui);
+    var settingsRow = null;
+    var labels = D.querySelectorAll('.settings-row-title');
+    for (var si = 0; si < labels.length; si++) {
+      if (/^(主题|Theme)$/.test(labels[si].textContent.trim())) {
+        settingsRow = labels[si].closest('[data-settings-row]');
+        break;
+      }
+    }
+    if (BOX.settingsRow && BOX.settingsRow !== settingsRow) BOX.settingsRow.removeAttribute(SCOPE);
+    BOX.settingsRow = settingsRow;
+    if (settingsRow) {
+      BOX.ui.removeAttribute('aria-hidden');
+      settingsRow.setAttribute(SCOPE, '');
+      var control = settingsRow.querySelector('[data-settings-control]') || settingsRow;
+      if (BOX.ui.parentNode !== control) control.appendChild(BOX.ui);
+      BOX.ui.style.setProperty('position', 'static');
+      BOX.ui.style.setProperty('display', 'contents');
+      BOX.launch.style.setProperty('position', 'static');
+      BOX.launch.style.setProperty('display', 'inline-flex');
+      BOX.launch.style.setProperty('margin-left', '12px');
+      BOX.launch.textContent = '自定义场景与配色';
+    } else {
+      if (BOX.ui && BOX.ui.parentNode !== root) root.appendChild(BOX.ui);
+      BOX.launch.style.setProperty('display', 'none');
+      if (BOX.panel) BOX.panel.setAttribute('hidden', '');
+    }
     paint();
     return { ok: true, active: true };
   }
