@@ -363,12 +363,12 @@ if (process.platform === 'win32') {
 app.whenReady().then(async () => {
   cliProtectionClock.start(powerMonitor);
   const { UpdateService } = require('./update-service.cjs');
-  const updateService = new UpdateService({
-    source: process.env.CCD_UPDATE_MANIFEST_URL || '',
+  const updateService = process.env.CCD_UPDATE_MANIFEST_URL ? new UpdateService({
+    source: process.env.CCD_UPDATE_MANIFEST_URL,
     signerThumbprint: process.env.CCD_UPDATE_SIGNER_SHA1 || '',
     currentVersion: app.getVersion(),
     directory: path.join(app.getPath('userData'), 'updates'),
-  });
+  }) : new (require('./github-update-service.cjs').GitHubUpdateService)({ currentVersion: app.getVersion() });
   const showUpdates = require('./update-dialog.cjs').createUpdateDialog({
     service: updateService, dialog: require('electron').dialog, shell, getWindow: () => mainWindow,
   });

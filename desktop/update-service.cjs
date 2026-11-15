@@ -31,7 +31,7 @@ function requestStream(input, { allowLoopbackHttp = false, redirects = 0, origin
     try { u = checkedUrl(input, allowLoopbackHttp); } catch (e) { reject(e); return; }
     // All redirects stay on the initial origin. No cookies, authorization, or ambient session.
     if (origin && u.origin !== origin) { reject(new Error('更新重定向跨越源站')); return; }
-    const req = (u.protocol === 'https:' ? https : http).get(u, { headers: { Accept: '*/*', 'Accept-Encoding': 'identity' } }, res => {
+    const req = (u.protocol === 'https:' ? https : http).get(u, { headers: { Accept: '*/*', 'Accept-Encoding': 'identity', 'User-Agent': 'Xiaoke-Desktop-Updater' } }, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
         res.resume();
         if (!res.headers.location || redirects >= 3) { reject(new Error('更新重定向无效或过多')); return; }

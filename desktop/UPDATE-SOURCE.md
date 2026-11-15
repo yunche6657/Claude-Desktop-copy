@@ -1,6 +1,8 @@
 # Windows NSIS 更新源
 
-更新入口是应用菜单“检查更新…”、Ctrl+Shift+U，以及现有 AutoUpdater.checkForUpdates 桥接。采用原生对话框，不修改上游 renderer bundle。无更新源时明确显示“未配置更新源，请手动更新”。没有定时后台下载。
+从 0.2.9 起，应用菜单“检查更新…”、Ctrl+Shift+U 和现有 AutoUpdater.checkForUpdates 桥接默认查询 yunche6657/Claude-Desktop-copy 的 GitHub 最新稳定版。发现新版后显示发布说明，可打开浏览器下载对应架构安装器，再运行安装向导；查询失败可打开固定 GitHub 发布页。默认流程无需环境变量，不在后台下载或静默安装。0.2.8 用户需要手动安装一次 0.2.9 才能获得这个入口。
+
+以下自托管 manifest 流程仅在设置 CCD_UPDATE_MANIFEST_URL 时覆盖默认 GitHub 检查。
 
 启动应用前配置环境变量：
 

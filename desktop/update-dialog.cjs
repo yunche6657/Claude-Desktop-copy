@@ -13,6 +13,17 @@ function createUpdateDialog({ service, dialog, shell, getWindow }) {
     try {
       let state = service.getState();
       if (state.status !== 'downloaded' && state.status !== 'downloading') state = await service.check();
+      if (state.downloadMode === 'browser' && state.status === 'available') {
+        const result = await show({ type: 'info', title: '小克更新', message: state.message, detail: `${state.notes || ''}\n\n下载安装后运行向导完成更新。`, buttons: ['下载安装包', '发布说明', '稍后'], cancelId: 2 });
+        if (result.response === 0) await shell.openExternal(state.downloadUrl);
+        else if (result.response === 1) await shell.openExternal(state.releaseUrl);
+        return state;
+      }
+      if (state.status === 'error' && state.releaseUrl) {
+        const result = await show({ type: 'error', title: '检查更新失败', message: state.message, buttons: ['打开发布页', '关闭'], cancelId: 1 });
+        if (result.response === 0) await shell.openExternal(state.releaseUrl);
+        return state;
+      }
       if (state.status === 'available') {
         const result = await show({ type: 'info', title: '小克更新', message: state.message, buttons: ['下载更新', '稍后'], cancelId: 1 });
         if (result.response !== 0) return state;
