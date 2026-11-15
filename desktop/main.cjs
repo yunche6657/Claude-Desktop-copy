@@ -129,7 +129,7 @@ function chooseKernel() {
 }
 
 /** Build the CCB backend, or throw with a message naming what is missing. */
-function createCcbBackend({ cwd, log, acquireSlot }) {
+function createCcbBackend({ cwd, log, acquireSlot, extraArgs = [] }) {
   const root = require('./ccb-runtime-paths.cjs').resolveAgentRoot();
   modelRuntimeRestart.assertReady();
   return modelRuntimeRestart.guardBackend(createCcbKernel({
@@ -146,7 +146,12 @@ function createCcbBackend({ cwd, log, acquireSlot }) {
     permissionMode: process.env.CLAUDE_CCB_PERMISSION_MODE || 'default',
     permissionPromptTool: 'stdio',
     // Preserve individual API message usage rather than the cumulative result usage.
-    extraArgs: ['--include-partial-messages'],
+    extraArgs: ['--include-partial-messages'].concat(extraArgs),
+    requestContext: message => {
+      const index = extraArgs.indexOf('--append-system-prompt');
+      if (index < 0) return '';
+      return require('./theme-prompt.cjs').themeRequestContext(message, extraArgs[index + 1]);
+    },
     // The kernel must call the model the configured gateway actually serves; its own default is
     // a Claude id, which a non-Anthropic gateway does not have (every turn then retries).
     model: process.env.CLAUDE_AGENT_MODEL || process.env.ANTHROPIC_MODEL || null,
@@ -362,6 +367,17 @@ if (process.platform === 'win32') {
 
 app.whenReady().then(async () => {
   cliProtectionClock.start(powerMonitor);
+  const { ThemeController } = require('./theme-controller.cjs');
+  const themeController = new ThemeController({
+    directory: path.join(app.getPath('userData'), 'themes'),
+    onChange: state => {
+      if (mainWindow && !mainWindow.isDestroyed()) require('./theme-renderer.cjs').applyThemeState(mainWindow, state).catch(error => console.warn('[theme]', error.message));
+    },
+  });
+  // Give file-editing agents an existing complete document on first launch.
+  if (!fs.existsSync(themeController.getThemeFile())) themeController.setTheme(themeController.getState());
+  themeController.watch();
+  app.once('before-quit', () => themeController.close());
   const { UpdateService } = require('./update-service.cjs');
   const updateService = process.env.CCD_UPDATE_MANIFEST_URL ? new UpdateService({
     source: process.env.CCD_UPDATE_MANIFEST_URL,
@@ -463,6 +479,8 @@ app.whenReady().then(async () => {
       return runner;
     }
     const runner = createAgentRunner({
+      additionalSystemPrompt: require('./theme-prompt.cjs').themePrompt(themeController),
+      additionalFileRoots: [path.dirname(themeController.getThemeFile())],
       workspaceRoot,
       env: ccbRuntime?.env || process.env,
       approve: async request => {
@@ -804,6 +822,7 @@ app.whenReady().then(async () => {
     cliGovernor.start();
   }
   bridge = registerBridgeServices({
+    themeController,
     updateService,
     showUpdates,
     onModelCatalogChanged: () => modelRuntimeRestart.request(),
@@ -977,6 +996,7 @@ app.whenReady().then(async () => {
           try {
             backend = createCcbBackend({
               cwd: process.env.CLAUDE_WORKSPACE || process.cwd(),
+              extraArgs: ['--append-system-prompt', require('./theme-prompt.cjs').themePrompt(themeController), '--add-dir', path.dirname(themeController.getThemeFile())],
               log: (msg) => { if (process.env.CLAUDE_FRONTEND_LOG === '1') console.log('[ccb]', msg); },
             });
           } catch (error) {
@@ -1287,6 +1307,12 @@ app.whenReady().then(async () => {
     });
   }
 
+  win.webContents.on('did-finish-load', () => {
+    if (useFrontend) require('./theme-renderer.cjs').installThemeRenderer(win, {
+      state: themeController.getState(), scenes: themeController.listScenes(),
+    }).then(result => { if (!result.ok) console.warn('[theme] install failed:', result.reason); })
+      .catch(error => console.warn('[theme]', error.message));
+  });
   await win.loadURL(useFrontend ? FRONTEND_URL : origin);
 
   // Layout fix for the shipped frontend: its notification-permission banner renders on top of the

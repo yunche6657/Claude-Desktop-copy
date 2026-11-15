@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "https://github.com/anthropics/claude-plugins-official",
+    "commit": "b5b01ac4f889fec0c4c6bb89f27ca7c8574473f6",
+    "plugin": "plugins/theme-examples",
+    "pluginVersion": "0.4.3",
+    "license": "Apache-2.0",
+    "licenseFile": "LICENSE",
+    "extracted": [
+      "plugins/theme-examples/hooks/themes.ts",
+      "plugins/theme-examples/hooks/scenes/blueprint.ts",
+      "plugins/theme-examples/hooks/scenes/braille-stars.ts",
+      "plugins/theme-examples/hooks/scenes/classic.ts",
+      "plugins/theme-examples/hooks/scenes/departure-board.ts",
+      "plugins/theme-examples/hooks/scenes/dither-dunes.ts",
+      "plugins/theme-examples/hooks/scenes/halftone-dawn.ts",
+      "plugins/theme-examples/hooks/scenes/honu-lagoon.ts",
+      "plugins/theme-examples/hooks/scenes/koi-mosaic.ts",
+      "plugins/theme-examples/hooks/scenes/night-reef.ts",
+      "plugins/theme-examples/hooks/scenes/paper-garden.ts",
+      "plugins/theme-examples/hooks/scenes/plotter-tide.ts",
+      "plugins/theme-examples/hooks/scenes/snow-pines.ts",
+      "plugins/theme-examples/hooks/scenes/teletext-clouds.ts",
+      "plugins/theme-examples/hooks/scenes/vector-range.ts",
+      "plugins/theme-examples/LICENSE"
+    ],
+    "method": "node:module.stripTypeScriptTypes (type removal only, parser) + node:vm with an empty sandbox global and code generation disabled; run twice per scene and required to agree byte for byte. No downloaded code is imported, required, spawned, or given any host object."
+  },
+  "scenes": [
+    {
+      "id": "honu-lagoon",
+      "title": "Honu Lagoon",
+      "blurb": "A live ASCII lagoon from above: a tile turtle swims by a sand island",
+      "mode": "light",
+      "twin": null,
+      "glass": {
+        "blur": 7,
+        "tint": "#e6fbff",
+        "opacity": 0.42
+      },
+      "file": "honu-lagoon.svg",
+      "bytes": 71314,
+      "sha256": "ccf9dd0dc40858cfd3162084732fc50d68eca256a9923102f8391983ec8b8213"
+    },
+    {
+      "id": "koi-mosaic",
+      "title": "Koi Mosaic",
+      "blurb": "A tiled koi pond from above: two koi, lily pads, slow ripples.",
+      "mode": "light",
+      "twin": null,
+      "glass": {
+        "blur": 12,
+        "tint": "#eef8f1",
+        "opacity": 0.36
+      },
+      "file": "koi-mosaic.svg",
+      "bytes": 63186,
+      "sha256": "bd7205d972501e12eb3815c1dc25d557bdacd3b68a23e0425adaf4757fb7ad48"
+    },
+    {
+      "id": "halftone-dawn",
+      "title": "Halftone Dawn",
+      "blurb": "A two-ink riso sunrise: halftone dots that breathe outward.",
+      "mode": "light",
+      "twin": "halftone-dusk",
+      "glass": {
+        "blur": 14,
+        "tint": "#f6ead9",
+        "opacity": 0.55
+      },
+      "file": "halftone-dawn.svg",
+      "bytes": 68435,
+      "sha256": "891b0d57e1bab8a0f6aef57f2d8c31da6573281fa00e6a2f3603cacf319caa12"
+    },
+    {
+      "id": "halftone-dusk",
+      "title": "Halftone Dusk",
+      "blurb": "The riso sunrise on night-blue stock: an ember sun in breathing dots.",
+      "mode": "dark",
+      "twin": "halftone-dawn",
+      "glass": {
+        "blur": 14,
+        "tint": "#1f2336",
+        "opacity": 0.5
+      },
+      "file": "halftone-dusk.svg",
+      "bytes": 68438,
+      "sha256": "11a01529d0d3e944ac38203b454aaad02abafbd3ca4941ee155248055564831a"
+    },
+    {
+      "id": "plotter-tide",
+      "title": "Plotter Tide",
+      "blurb": "Pen-plotter tide lines drawing themselves on warm paper.",
+      "mode": "light",
+      "twin": "plotter-tide-night",
+      "glass": {
+        "blur": 0,
+        "tint": "#f4efe4",
+        "opacity": 0.32
+      },
+      "file": "plotter-tide.svg",
+      "bytes": 39289,
+      "sha256": "740e833206b1d2a7487fe08e68a4007fb34c58b580225604a275f5fb14153700"
+    },
+    {
+      "id": "plotter-tide-night",
+      "title": "Plotter Tide, Night",
+      "blurb": "The plotter's tide chart in pale ink on blue-black night paper.",
+      "mode": "dark",
+      "twin": "plotter-tide",
+      "glass": {
+        "blur": 0,
+        "tint": "#141a27",
+        "opacity": 0.32
+      },
+      "file": "plotter-tide-night.svg",
+      "bytes": 39289,
+      "sha256": "80f3686122e12eb7c5a1c24fda4286cd8d4857fef96a7dd246415936e0b3d71b"
+    },
+    {
+      "id": "dither-dunes",
+      "title": "Dither Dunes",
+      "blurb": "One-bit dunes on sand paper, shaded in dots, under a terracotta sun",
+      "mode": "light",
+      "twin": "dither-dunes-night",
+      "glass": {
+        "blur": 18,
+        "tint": "#f1e8d6",
+        "opacity": 0.34
+      },
+      "file": "dither-dunes.svg",
+      "bytes": 88155,
+      "sha256": "6e9b029b7cfa8f25d4a726288b8066e7eee8457fe215c662302068ac80e44478"
+    },
+    {
+      "id": "dither-dunes-night",
+      "title": "Dither Dunes Night",
+      "blurb": "The same dunes after dark: pale dots on umber, an ember sun",
+      "mode": "dark",
+      "twin": "dither-dunes",
+      "glass": {
+        "blur": 18,
+        "tint": "#1c1712",
+        "opacity": 0.4
+      },
+      "file": "dither-dunes-night.svg",
+      "bytes": 88155,
+      "sha256": "64b86ab56eb156d6d2b561d7e15fc771d0e3fa1dd44a37b5cc998dff7c4ca44a"
+    },
+    {
+      "id": "paper-garden",
+      "title": "Paper Garden",
+      "blurb": "Cut-paper leaves at the edges of a warm white sheet, one coral bloom.",
+      "mode": "light",
+      "twin": "paper-garden-kraft",
+      "glass": {
+        "blur": 16,
+        "tint": "#fbf6ec",
+        "opacity": 0.5
+      },
+      "file": "paper-garden.svg",
+      "bytes": 24386,
+      "sha256": "5aabfcb8db9250bf9e85bd4423112deeb320f303af125ae17c6722cbac63f1c6"
+    },
+    {
+      "id": "paper-garden-kraft",
+      "title": "Paper Garden, Kraft",
+      "blurb": "Cut-paper leaves at the edges of dark kraft paper, one coral bloom.",
+      "mode": "dark",
+      "twin": "paper-garden",
+      "glass": {
+        "blur": 16,
+        "tint": "#35312a",
+        "opacity": 0.5
+      },
+      "file": "paper-garden-kraft.svg",
+      "bytes": 24385,
+      "sha256": "230ba38b964be013a737d3e7138212a551f31aa05df14bb70016bece63679542"
+    },
+    {
+      "id": "night-reef",
+      "title": "Night Reef",
+      "blurb": "The lagoon after dark: a turtle and a ray that glow as they swim",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 14,
+        "tint": "#0a1430",
+        "opacity": 0.4
+      },
+      "file": "night-reef.svg",
+      "bytes": 76858,
+      "sha256": "35f10df406974d030e6559fc7747ccb59326de23aa688f611b41ba44e7b7a866"
+    },
+    {
+      "id": "snow-pines",
+      "title": "Snow Pines",
+      "blurb": "An ASCII pine forest at dusk, snow drifting down through the trees.",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 16,
+        "tint": "#14143a",
+        "opacity": 0.5
+      },
+      "file": "snow-pines.svg",
+      "bytes": 53710,
+      "sha256": "361b8b6b096a21227a5eba37b34ff8384133c2abb1783bcd2035a1b0e6a97867"
+    },
+    {
+      "id": "braille-stars",
+      "title": "Braille Stars",
+      "blurb": "A slow night sky drawn dot by dot on a braille grid.",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 20,
+        "tint": "#0a1430",
+        "opacity": 0.3
+      },
+      "file": "braille-stars.svg",
+      "bytes": 41126,
+      "sha256": "cc2c0a946f1e07682c6869b8956407fc5cebad232c09d28f21ef8aec2b703b16"
+    },
+    {
+      "id": "teletext-clouds",
+      "title": "Block Clouds",
+      "blurb": "Night clouds built from blocks on a teletext grid, drifting in",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 12,
+        "tint": "#0d173f",
+        "opacity": 0.34
+      },
+      "file": "teletext-clouds.svg",
+      "bytes": 48816,
+      "sha256": "2cefe11fd48ec667c39660255e9a25bd007f99bf97964fe5a7c38ad5822e1c1e"
+    },
+    {
+      "id": "vector-range",
+      "title": "Vector Range",
+      "blurb": "Phosphor mountains on black; an amber beam keeps retracing them.",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 22,
+        "tint": "#0e2f27",
+        "opacity": 0.42
+      },
+      "file": "vector-range.svg",
+      "bytes": 22046,
+      "sha256": "77c86fbfbbeb9ec9b8206a5ce64256df947b3c1aef4b8cc252539160cceb8b03"
+    },
+    {
+      "id": "departure-board",
+      "title": "Departure Board",
+      "blurb": "An amber LED board re-lettering itself, row by row.",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 14,
+        "tint": "#1a120b",
+        "opacity": 0.34
+      },
+      "file": "departure-board.svg",
+      "bytes": 21619,
+      "sha256": "07cfa310992fa049542e39064a4ef1bd591a86bf2542af4b6ea025cd7d904430"
+    },
+    {
+      "id": "blueprint",
+      "title": "Blueprint",
+      "blurb": "A cyanotype sheet; a comet goes round its plotted orbit in the corner.",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 14,
+        "tint": "#0c2444",
+        "opacity": 0.42
+      },
+      "file": "blueprint.svg",
+      "bytes": 39585,
+      "sha256": "98eb20e949df65b37557c275da811d1ae68736148b607b048af8d9849a825f91"
+    },
+    {
+      "id": "deep-water",
+      "title": "Deep Water",
+      "blurb": "Light falling through deep water, and one quiet turtle",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 14,
+        "tint": "#062c3a",
+        "opacity": 0.34
+      },
+      "file": "deep-water.svg",
+      "bytes": 4338,
+      "sha256": "1ac4f0236fb5561ac71afb42ec88c27b87a04b51ded74bda6d64462dc4ece58b"
+    },
+    {
+      "id": "aurora",
+      "title": "Aurora",
+      "blurb": "Northern lights swaying over a dark ridge",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 18,
+        "tint": "#14123a",
+        "opacity": 0.3
+      },
+      "file": "aurora.svg",
+      "bytes": 3379,
+      "sha256": "4c23bddd36e29c78e50a086a2a8f9232bdac7fead18276ca7974193dd4cd4788"
+    },
+    {
+      "id": "ember",
+      "title": "Ember",
+      "blurb": "A warm glow in the corners and a few embers rising",
+      "mode": "dark",
+      "twin": null,
+      "glass": {
+        "blur": 12,
+        "tint": "#2a0d12",
+        "opacity": 0.3
+      },
+      "file": "ember.svg",
+      "bytes": 2874,
+      "sha256": "93027f97b28ebcff0638f6bea33d4b7df2c5d40e9acd5306ed42fde24931882a"
+    }
+  ]
+}

@@ -59,7 +59,7 @@ test('the runner cache is keyed on the mode AND the model', () => {
 test('createAgentRunner accepts and applies a model override', () => {
   // Before the fix the parameter did not exist, so the value was silently discarded.
   const config = read('desktop/agent-config.cjs');
-  assert.match(config, /onEvent = \(\) => \{\}, permissionMode, model \} = \{\}/, 'createAgentRunner has no model parameter');
+  assert.match(config, /onEvent = \(\) => \{\}, permissionMode, model(?:, [^}]*)? \} = \{\}/, 'createAgentRunner has no model parameter');
   assert.match(config, /typeof model === 'string' && model && model !== resolved\.model \? \{ model \}/, 'the model override is not applied');
 });
 

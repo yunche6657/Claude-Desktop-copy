@@ -1224,7 +1224,8 @@ function createCcbKernel(options = {}) {
     const sessionId = state.sessionId;
     if (disposed) throw new Error('kernel backend has been disposed');
     if (opts.signal?.aborted) throw new Error('CCB turn was cancelled before it started');
-    const content = userContent(message, opts.images);
+    const requestContext = typeof options.requestContext === 'function' ? options.requestContext(message) : '';
+    const content = userContent(requestContext ? `${requestContext}\n\n${message}` : message, opts.images);
     const messageUuid = typeof opts.messageUuid === 'string'
       && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(opts.messageUuid)
       ? opts.messageUuid : randomUUID();

@@ -341,6 +341,7 @@
     ]
   },
   "claude.web": {
+    "CustomThemes": ["getState", "listScenes", "setTheme", "reset", "getThemeFile", "setWindowMode"],
     "WindowControl": [
       "resize",
       "show",

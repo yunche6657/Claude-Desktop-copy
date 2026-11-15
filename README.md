@@ -1,12 +1,14 @@
 # 小克 · Code Desktop Reconstruction
 
-**以 1:1 复刻 Claude Desktop 为目标，支持自定义模型、网关、工具和界面。** 当前版本 **0.2.9**，提供 Code / Cowork 工作区、本地执行、MCP、持久会话与 Windows 完整安装器。自有源码采用 MIT 许可证，允许修改、二次开发和分发；已知功能差异和第三方资源边界见下文。
+**以 1:1 复刻 Claude Desktop 为目标，支持自定义模型、网关、工具和界面。** 当前版本 **0.3.0**，提供 Code / Cowork 工作区、本地执行、MCP、持久会话与 Windows 完整安装器。自有源码采用 MIT 许可证，允许修改、二次开发和分发；已知功能差异和第三方资源边界见下文。
 
 本项目与 Anthropic 无隶属关系。Claude 等名称与商标属于其各自所有者。
 
 ## 下载安装（Windows x64）
 
-**[下载小克 0.2.9 完整安装器](https://github.com/yunche6657/Claude-Desktop-copy/releases/download/v0.2.9/Xiaoke-0.2.9-x64.exe)** · [发布说明与 SHA-256](https://github.com/yunche6657/Claude-Desktop-copy/releases/tag/v0.2.9)
+**[下载小克 0.3.0 完整安装器](https://github.com/yunche6657/Claude-Desktop-copy/releases/download/v0.3.0/Xiaoke-0.3.0-x64.exe)** · [发布说明与 SHA-256](https://github.com/yunche6657/Claude-Desktop-copy/releases/tag/v0.3.0)
+
+0.3.0 新增 Code 配色与官方 20 场景背景：右上角“主题”可预览、保存、控制动画和玻璃效果；关闭未保存预览会恢复原主题。也可直接发送“把小克 Code 主题改成深色极光，强调色 #39c5bb，关闭动画”，模型会编辑专用主题 JSON，桌面校验后热刷新。切离 Code 会恢复原有视图明暗模式。本版同时修复深色文字、嵌套控件配色和 Windows 窗口按钮背景不同步。
 
 运行安装器并启动“小克”，随后在应用设置中配置自己的模型网关、API Key 和模型。无需安装 Node.js、npm、Electron 或 Bun。安装包已包含完整桌面前端（Code / Cowork）与代理运行时；不含发布者的账号和聊天历史。模型调用需要可用的模型服务。
 

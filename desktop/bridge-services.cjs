@@ -381,12 +381,31 @@ function registerBridgeServices(opts) {
       return root.getAttribute('data-mode');
     })()`;
     try {
+      if (typeof win.setTitleBarOverlay === 'function') {
+        win.setTitleBarOverlay({ color: resolved === 'dark' ? '#151515' : '#fcfcfb', symbolColor: resolved === 'dark' ? '#f0efec' : '#0b0b0b' });
+      }
       return await win.webContents.executeJavaScript(script, true);
     } catch {
       // A renderer that is navigating or gone must not turn a theme click into a rejection.
       return null;
     }
   };
+
+  if (opts.themeController) {
+    const themes = opts.themeController;
+    define('claude.web_$_CustomThemes_$_setWindowMode', (_event, mode) => {
+      if (mode !== 'dark' && mode !== 'light') return false;
+      const win = getMainWindow();
+      if (!win || win.isDestroyed()) return false;
+      win.setTitleBarOverlay?.({ color: mode === 'dark' ? '#151515' : '#fcfcfb', symbolColor: mode === 'dark' ? '#f0efec' : '#0b0b0b' });
+      return true;
+    });
+    define('claude.web_$_CustomThemes_$_getState', () => themes.getState());
+    define('claude.web_$_CustomThemes_$_listScenes', () => themes.listScenes());
+    define('claude.web_$_CustomThemes_$_setTheme', (_event, value) => themes.setTheme(value));
+    define('claude.web_$_CustomThemes_$_reset', () => themes.reset());
+    define('claude.web_$_CustomThemes_$_getThemeFile', () => themes.getThemeFile());
+  }
 
   // window control
   define('claude.web_$_WindowControl_$_resize', (_e, w, h) => {

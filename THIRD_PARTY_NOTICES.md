@@ -8,6 +8,7 @@ This inventory records known origins and publication exclusions. It does not gra
 | electron-builder | https://github.com/electron-userland/electron-builder | npm development dependency; generated installer excluded |
 | Claude Code Best runtime | https://github.com/claude-code-best/claude-code | setup script only; generated agent-core excluded |
 | Bun | https://github.com/oven-sh/bun | setup script only; binary excluded |
+| Theme example scenes | https://github.com/anthropics/claude-plugins-official/tree/main/plugins/theme-examples | 20 derived SVG scenes in desktop/themes, Apache-2.0; upstream LICENSE and pinned source metadata included |
 | Desktop frontend ion-dist | Locally pinned desktop frontend snapshot; related public extraction: https://github.com/rianprei/claude-desktop-analysis/tree/main/resources/ion-dist | Included as precompiled assets with per-file SHA-256 inventory; not relicensed under MIT. The related public extraction is not asserted to be the exact same build. |
 | Desktop icons in desktop/assets | Reconstruction workspace assets; precise provenance not established | Included in source snapshot for review; reuse rights have not been established |
 | i18n overlay | Reconstruction workspace localization data | Included for review; full provenance review pending |

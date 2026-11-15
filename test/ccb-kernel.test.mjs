@@ -360,6 +360,18 @@ test('one turn streams text and resolves with the result frame', async () => {
   }
 });
 
+test('request context reaches the actual child user frame and leaves ordinary messages intact', async () => {
+  const fake = makeFakeKernel();
+  const log = path.join(fake.dir, 'frames.jsonl');
+  const kernel = makeKernel({ ...fake.options, env: { FAKE_CCB_LOG: log }, requestContext: message => message.includes('theme') ? '<theme-file>C:\\fixture\\theme.json</theme-file>' : '' });
+  await kernel.sendMessage('ctx', 'change theme', {});
+  await kernel.sendMessage('ctx', 'hello', {});
+  const users = readLog(log).filter(f => f.type === 'user');
+  const text = frame => typeof frame.message.content === 'string' ? frame.message.content : frame.message.content.map(x => x.text || '').join('');
+  assert.match(text(users[0]), /<theme-file>C:\\fixture\\theme.json<\/theme-file>/);
+  assert.equal(text(users[1]), 'hello');
+});
+
 test('the initialize handshake is sent before any user frame', async () => {
   const logPath = path.join(mkdtempSync(path.join(tmpdir(), 'fake-ccb-')), 'frames.log');
   const fake = makeFakeKernel(logPath);

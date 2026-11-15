@@ -256,7 +256,7 @@ function buildSystemPrompt(skills) {
     + lines.join('\n');
 }
 
-function createAgentRunner({ workspaceRoot, approve, env = process.env, onEvent = () => {}, permissionMode, model } = {}) {
+function createAgentRunner({ workspaceRoot, approve, env = process.env, onEvent = () => {}, permissionMode, model, additionalSystemPrompt = '', additionalFileRoots = [] } = {}) {
   // The SESSION decides the mode, not the process. main.cjs keys its runner cache by the
   // mode it was asked for, but this function used to drop the argument and resolve the
   // mode from env/profile only. Measured: createAgentRunner({permissionMode: 'acceptEdits'})
@@ -278,7 +278,7 @@ function createAgentRunner({ workspaceRoot, approve, env = process.env, onEvent 
   if (!config.model) throw new Error('agent mode needs CLAUDE_AGENT_MODEL or ANTHROPIC_MODEL');
 
   const root = workspaceRoot ? path.resolve(workspaceRoot) : process.cwd();
-  const allowedRoots = [root];
+  const allowedRoots = [root, ...additionalFileRoots.map(value => path.resolve(value))];
   const tools = defineTools({ workspaceRoot: root, allowedRoots, execRoots: [root, ...skillRoots()] });
   const definitions = definitionsFor(tools);
 
@@ -313,7 +313,7 @@ function createAgentRunner({ workspaceRoot, approve, env = process.env, onEvent 
       });
       // Rebuilt every run so a skill added in the UI applies to the next message.
       const dataDir = env.CLAUDE_WORKSPACE || process.cwd();
-      const system = buildSystemPrompt(skillCatalogue(require('node:path').join(dataDir, '.data')));
+      const system = buildSystemPrompt(skillCatalogue(require('node:path').join(dataDir, '.data'))) + (additionalSystemPrompt ? `\n\n${additionalSystemPrompt}` : '');
       return await runAgent({
         baseUrl: config.baseUrl,
         apiKey: config.apiKey,
