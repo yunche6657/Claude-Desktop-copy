@@ -11,6 +11,15 @@ test('stable GitHub release requires exact repository installer and compares ver
  assert.equal(releaseState(release(),'0.4.0','win32','x64').status,'current');
  for(const invalid of [{...release(),draft:true},{...release(),prerelease:true},{...release(),assets:[]},{...release(),assets:[{...release().assets[0],browser_download_url:'https://example.com/setup.exe'}]}])assert.throws(()=>releaseState(invalid,'0.2.9','win32','x64'));
 });
+test('unprefixed stable tags preserve actual release and installer paths',()=>{
+ const r=release();r.tag_name='0.3.0';r.assets[0].browser_download_url=`${RELEASES_URL}/download/0.3.0/Xiaoke-0.3.0-x64.exe`;
+ const state=releaseState(r,'0.2.9','win32','x64');assert.equal(state.status,'available');assert.equal(state.releaseUrl,`${RELEASES_URL}/tag/0.3.0`);
+});
+test('browser launch failure is visible and next check can retry',async()=>{
+ const state=releaseState(release(),'0.2.9','win32','x64');let fail=true;const dialogs=[];
+ const show=createUpdateDialog({service:{getState:()=>state,check:async()=>state},dialog:{showMessageBox:async options=>{dialogs.push(options);return{response:0}}},shell:{openExternal:async()=>{if(fail)throw Error('no browser')}},getWindow:()=>null});
+ await show();assert.equal(dialogs.at(-1).title,'打开下载页失败');fail=false;await show();assert.equal(dialogs.length,3);
+});
 test('check coalesces requests and errors offer the fixed release page',async()=>{
  let calls=0;const service=new GitHubUpdateService({currentVersion:'0.2.9',platform:'win32',arch:'x64',fetchRelease:async()=>{calls++;return release()}});
  const states=await Promise.all([service.check(),service.check()]);assert.equal(calls,1);assert.equal(states[0].status,'available');

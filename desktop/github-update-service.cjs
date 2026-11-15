@@ -8,10 +8,11 @@ const API_URL = `https://api.github.com/repos/${REPOSITORY}/releases/latest`;
 function releaseState(release, currentVersion, platform, arch) {
   if (!release || release.draft || release.prerelease || !/^v?\d+\.\d+\.\d+$/.test(release.tag_name || '')) throw new Error('GitHub 最新稳定版信息无效');
   const version = release.tag_name.replace(/^v/, '');
-  const releaseUrl = `${RELEASES_URL}/tag/v${version}`;
+  const tag = encodeURIComponent(release.tag_name);
+  const releaseUrl = `${RELEASES_URL}/tag/${tag}`;
   const available = compareVersions(version, currentVersion) > 0;
   const asset = (release.assets || []).find(a => a.name === `Xiaoke-${version}-${arch}.exe` && a.state === 'uploaded');
-  const expected = `https://github.com/${REPOSITORY}/releases/download/v${version}/Xiaoke-${version}-${arch}.exe`;
+  const expected = `https://github.com/${REPOSITORY}/releases/download/${tag}/Xiaoke-${version}-${arch}.exe`;
   if (available && (platform !== 'win32' || !asset || asset.browser_download_url !== expected)) throw new Error('新版尚未提供当前平台的完整安装包，请稍后重试');
   return { status: available ? 'available' : 'current', currentVersion, version,
     message: available ? `发现新版本 ${version}` : `当前已是最新版本（${currentVersion}）`,
