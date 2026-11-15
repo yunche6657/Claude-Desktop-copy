@@ -18,15 +18,47 @@ function modelsUrl(baseUrl) {
   return url;
 }
 
+// Messages compatibility prefixes need not expose a Models API. Keep discovery
+// on the configured origin, and never change the saved inference URL/protocol.
+function modelEndpoints(options = {}) {
+  const primary = modelsUrl(options?.baseUrl);
+  const anthropic = String(options?.apiType || '').toLowerCase().includes('anthropic');
+  if (!anthropic) return [{ url: primary, bearer: true }];
+  const match = primary.pathname.match(/^(.*)\/anthropic\/v1\/models$/i);
+  if (!match) return [{ url: primary, bearer: false }];
+  const sibling = new URL(primary);
+  sibling.pathname = `${match[1]}/models`;
+  const versioned = new URL(primary);
+  versioned.pathname = `${match[1]}/v1/models`;
+  const fallback = [{ url: sibling, bearer: true }, { url: versioned, bearer: true }];
+  // DeepSeek documents /anthropic for Messages and /models for discovery.
+  if (primary.hostname === 'api.deepseek.com' && match[1] === '') return fallback;
+  return [{ url: primary, bearer: false }, ...fallback];
+}
+
 const failure = error => ({ ok: false, models: [], error });
 
-/** Query only the supplied provider; no settings, cache, logs or credentials are persisted. */
 async function discoverModels(options = {}) {
+  let endpoints;
+  try { endpoints = modelEndpoints(options); }
+  catch { return discoverModelsAt(options); }
+  let result;
+  for (const endpoint of endpoints) {
+    result = await discoverModelsAt(options, endpoint);
+    // Only a missing/unsupported route warrants trying the sibling Models API.
+    // Authentication, rate limits, redirects and server failures stay explicit.
+    if (result.ok || !/HTTP (404|405)\b/.test(result.error || '')) return result;
+  }
+  return result;
+}
+
+/** Query only the supplied provider; no settings, cache, logs or credentials are persisted. */
+async function discoverModelsAt(options = {}, endpoint) {
   let url;
   let apiKey;
   let anthropic;
   try {
-    url = modelsUrl(options?.baseUrl);
+    url = endpoint?.url || modelsUrl(options?.baseUrl);
     apiKey = typeof options?.apiKey === 'string' ? options.apiKey.trim() : '';
     if (apiKey.startsWith('__sealed__:')) return failure('此凭据是其他应用加密保存的封装，请在复刻版中重新填写原始 API 密钥。');
     anthropic = String(options?.apiType || '').toLowerCase().includes('anthropic');
@@ -38,6 +70,7 @@ async function discoverModels(options = {}) {
   if (anthropic) {
     headers['anthropic-version'] = '2023-06-01';
     if (apiKey) headers['x-api-key'] = apiKey;
+    if (endpoint?.bearer && apiKey) headers.authorization = `Bearer ${apiKey}`;
   } else if (apiKey) {
     headers.authorization = `Bearer ${apiKey}`;
   }
@@ -118,4 +151,4 @@ async function discoverModels(options = {}) {
   });
 }
 
-module.exports = { discoverModels, modelsUrl, TIMEOUT_MS, MAX_RESPONSE_BYTES };
+module.exports = { discoverModels, modelsUrl, modelEndpoints, TIMEOUT_MS, MAX_RESPONSE_BYTES };

@@ -1,12 +1,12 @@
 # 小克 · Code Desktop Reconstruction
 
-**以 1:1 复刻 Claude Desktop 为目标，支持自定义模型、网关、工具和界面。** 当前版本 **0.2.8**，提供 Code / Cowork 工作区、本地执行、MCP、持久会话与 Windows 完整安装器。自有源码采用 MIT 许可证，允许修改、二次开发和分发；已知功能差异和第三方资源边界见下文。
+**以 1:1 复刻 Claude Desktop 为目标，支持自定义模型、网关、工具和界面。** 当前版本 **0.2.9**，提供 Code / Cowork 工作区、本地执行、MCP、持久会话与 Windows 完整安装器。自有源码采用 MIT 许可证，允许修改、二次开发和分发；已知功能差异和第三方资源边界见下文。
 
 本项目与 Anthropic 无隶属关系。Claude 等名称与商标属于其各自所有者。
 
 ## 下载安装（Windows x64）
 
-**[下载小克 0.2.8 完整安装器](https://github.com/yunche6657/Claude-Desktop-copy/releases/download/v0.2.8/Xiaoke-0.2.8-x64.exe)** · [发布说明与 SHA-256](https://github.com/yunche6657/Claude-Desktop-copy/releases/tag/v0.2.8)
+**[下载小克 0.2.9 完整安装器](https://github.com/yunche6657/Claude-Desktop-copy/releases/download/v0.2.9/Xiaoke-0.2.9-x64.exe)** · [发布说明与 SHA-256](https://github.com/yunche6657/Claude-Desktop-copy/releases/tag/v0.2.9)
 
 运行安装器并启动“小克”，随后在应用设置中配置自己的模型网关、API Key 和模型。无需安装 Node.js、npm、Electron 或 Bun。安装包已包含完整桌面前端（Code / Cowork）与代理运行时；不含发布者的账号和聊天历史。模型调用需要可用的模型服务。
 
@@ -83,9 +83,9 @@ npm run package:check
 npm run package
 ```
 
-产物位于 `release/小克-0.2.8-x64.exe`。安装器应作为 GitHub Release 附件发布，不提交到 Git 源码历史。
+产物位于 `release/小克-0.2.9-x64.exe`。安装器应作为 GitHub Release 附件发布，不提交到 Git 源码历史。
 
-## 0.2.8 近期修复
+## 0.2.9 近期修复
 
 - Code 提问先于回答发布，普通发送及时返回接收回执。
 - Cowork 同 UUID 流式消息更新，MCP 注册不阻塞历史加载。

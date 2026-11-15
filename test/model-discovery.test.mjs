@@ -54,6 +54,52 @@ test('Anthropic uses version and x-api-key with data or models and all endpoint 
   }
 });
 
+test('DeepSeek Anthropic base discovers from documented Models API without changing inference settings', () => {
+  const { modelEndpoints } = require('../desktop/model-discovery.cjs');
+  for (const suffix of ['/anthropic', '/anthropic/', '/anthropic/v1', '/anthropic/v1/messages', '/anthropic/messages']) {
+    const options = { baseUrl: `https://api.deepseek.com${suffix}`, apiType: 'anthropic', apiKey: 'key' };
+    const original = { ...options };
+    assert.deepEqual(modelEndpoints(options).map(e => [e.url.href, e.bearer]), [
+      ['https://api.deepseek.com/models', true], ['https://api.deepseek.com/v1/models', true],
+    ]);
+    assert.deepEqual(options, original);
+  }
+});
+
+test('Anthropic compatibility routes fall back on 404/405 using same-origin Bearer discovery', async t => {
+  const requests = [];
+  const root = await serve(t, (req, res) => {
+    requests.push({ path: req.url, auth: req.headers.authorization, key: req.headers['x-api-key'] });
+    if (req.url === '/proxy/anthropic/v1/models') { res.writeHead(404); res.end(); }
+    else if (req.url === '/proxy/models') { res.writeHead(405); res.end(); }
+    else json(res, { data: [{ id: 'deepseek-flash' }] });
+  });
+  const options = { baseUrl: root + '/proxy/anthropic', apiType: 'anthropic', apiKey: 'test-key' };
+  const result = await discoverModels(options);
+  assert.equal(result.ok, true);
+  assert.equal(result.models[0].id, 'deepseek-flash');
+  assert.deepEqual(requests, [
+    { path: '/proxy/anthropic/v1/models', auth: undefined, key: 'test-key' },
+    { path: '/proxy/models', auth: 'Bearer test-key', key: 'test-key' },
+    { path: '/proxy/v1/models', auth: 'Bearer test-key', key: 'test-key' },
+  ]);
+  assert.equal(options.baseUrl, root + '/proxy/anthropic');
+  assert.equal(options.apiType, 'anthropic');
+});
+
+test('compatibility fallback does not mask authentication, rate-limit or server errors', async t => {
+  let status = 401;
+  let calls = 0;
+  const root = await serve(t, (_req, res) => { calls++; res.writeHead(status); res.end(); });
+  for (status of [401, 403, 429, 500, 302]) {
+    calls = 0;
+    const result = await discoverModels({ baseUrl: root + '/anthropic', apiType: 'anthropic' });
+    assert.equal(result.ok, false);
+    assert.match(result.error, new RegExp(`HTTP ${status}`));
+    assert.equal(calls, 1);
+  }
+});
+
 test('normalizes names, filters malformed rows, deduplicates ids, and accepts models for OpenAI', async t => {
   const root = await serve(t, (_req, res) => json(res, { models: [
     { id: ' m1 ', name: ' First ', display_name: 'Other' }, { id: 'm1', name: 'duplicate' },
@@ -112,11 +158,11 @@ test('redirects do not forward authentication and echoed model fields redact the
 });
 
 test('invalid URL, credentials and key headers return structured errors', async () => {
-  for (const baseUrl of ['', 'broken', 'file:///tmp', 'http://user:password@localhost']) {
+  for (const baseUrl of ['', 'http://[invalid', 'file:///tmp', 'http://user:password@localhost']) {
     const result = await discoverModels({ baseUrl });
     assert.equal(result.ok, false);
     assert.deepEqual(result.models, []);
-    assert.match(result.error, /valid HTTP or HTTPS/);
+    assert.match(result.error, /服务 URL 无效/);
   }
   assert.equal((await discoverModels({ baseUrl: 'http://127.0.0.1', apiKey: 'key\r\ninjected' })).ok, false);
   assert.equal((await discoverModels(null)).ok, false);
